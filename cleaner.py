@@ -17,6 +17,8 @@ def clean_directory(directory):
 		try:
 			if (os.path.isfile(file_path) or os.path.islink(file_path)) and filename.endswith(('.aux', '.log', '.out', '.toc')):  # noqa: SIM102
 				os.unlink(file_path)  # Remove the file or link
+			elif os.path.isdir(file_path):
+				clean_directory(file_path)  # Recursively clean subdirectories
 		except Exception as e:
 			print(f"Failed to delete {file_path}. Reason: {e}")
 
