@@ -1,0 +1,15 @@
+RL/LABS/
+
+*.aux
+*.log
+*.out
+*.toc
+
+AI/
+CV/
+Interactive Graphics/
+ML/
+Neuro Engineering/
+ROB*/
+RP/
+WEB/
