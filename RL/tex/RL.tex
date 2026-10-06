@@ -1,0 +1,2024 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=2.4cm]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools,bm}
+\usepackage{xcolor}
+\usepackage{booktabs,array,enumitem}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,shapes.geometric,shapes.misc,fit,backgrounds,decorations.pathreplacing}
+\usepackage{pgfplots}
+\usepackage{float}
+\usepgfplotslibrary{groupplots,fillbetween}
+\pgfplotsset{compat=1.16}
+\usepackage[most]{tcolorbox}
+\usepackage[labelfont=bf,font=small]{caption}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!50!black,citecolor=blue!50!black]{hyperref}
+
+\emergencystretch=2em
+\setlist[itemize]{itemsep=2pt,topsep=3pt}
+\setlist[enumerate]{itemsep=2pt,topsep=3pt}
+\setlength{\parskip}{4pt}
+\setlength{\parindent}{0pt}
+
+% ---------- macros ----------
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Prob}{\mathbb{P}}
+\newcommand{\PP}{\mathbb{P}}
+\newcommand{\Reg}{\mathrm{Regret}}
+\newcommand{\Unif}{\mathrm{Unif}}
+\newcommand{\ind}{\mathbf{1}}
+\newcommand{\rh}{\hat{\mathbf{r}}}
+\newcommand{\calA}{\mathcal{A}}
+\newcommand{\calX}{\mathcal{X}}
+\newcommand{\Norm}{\mathcal{N}}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator{\Var}{Var}
+\newcommand{\slides}[1]{\emph{(slides #1)}}
+\newcommand{\slr}[1]{\texorpdfstring{\emph{(slides #1)}}{(slides #1)}}
+\newcommand{\cS}{\mathcal{S}}
+\newcommand{\cA}{\mathcal{A}}
+\newcommand{\Rmax}{R_{\max}}
+
+\newcommand{\slideplaceholder}[3][3.6cm]{%
+  \begin{center}\begin{tikzpicture}
+  \node[draw=gray,dashed,thick,fill=gray!6,minimum width=0.82\linewidth,minimum height=#1,
+        align=center,text=gray!60!black,text width=0.74\linewidth]
+        {\textbf{[Insert figure from slide #2]}\\[2pt]\small #3};
+  \end{tikzpicture}\end{center}}
+
+% ---------- theorem environments ----------
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{algorithm}[theorem]{Algorithm}
+\theoremstyle{remark}
+\newtheorem*{remark}{Remark}
+
+\tcbset{thmbox/.style={enhanced,breakable,boxrule=0.6pt,arc=2pt,left=7pt,right=7pt,top=4pt,bottom=4pt,
+  before skip=9pt,after skip=9pt}}
+\tcolorboxenvironment{theorem}{thmbox,colback=red!3,colframe=red!55!black}
+\tcolorboxenvironment{lemma}{thmbox,colback=orange!4,colframe=orange!70!black}
+\tcolorboxenvironment{proposition}{thmbox,colback=teal!4,colframe=teal!60!black}
+\tcolorboxenvironment{corollary}{thmbox,colback=magenta!3,colframe=magenta!50!black}
+\tcolorboxenvironment{definition}{thmbox,colback=black!3,colframe=black!60}
+\tcolorboxenvironment{example}{thmbox,colback=yellow!7,colframe=yellow!45!black}
+\tcolorboxenvironment{algorithm}{thmbox,colback=violet!4,colframe=violet!60!black}
+
+\newtcolorbox{intuition}[1][]{enhanced,breakable,colback=blue!4,colframe=blue!55!black,
+  coltitle=white,fonttitle=\bfseries\small,title={Intuition #1},boxrule=0.6pt,arc=3pt,
+  left=7pt,right=7pt,top=3pt,bottom=3pt,before skip=9pt,after skip=11pt,
+  attach boxed title to top left={yshift=-2mm,xshift=4mm},boxed title style={colback=blue!55!black,arc=2pt}}
+
+\graphicspath{{/home/vittorio/Desktop/AIRO/RL/tex/RL02/}{/home/vittorio/Desktop/AIRO/RL/tex/RL02_2/}}
+
+\title{\textbf{Reinforcement Learning}\\[6pt]\large Comprehensive Lecture Notes}
+\author{Vittorio Cava}
+\date{A.Y.~2026/27}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+% ======================================================================
+% Lecture 2
+% ======================================================================
+\part{Lecture 2}
+
+\begin{tcolorbox}[enhanced,colback=white,colframe=black!40,boxrule=0.5pt,arc=2pt,title={\small How to read these notes},fonttitle=\bfseries]
+\small
+\textbf{Structure.} Sections and subsections follow the \emph{slide deck's own flow}, and each carries its
+slide range. The formal content of the companion note (definitions, lemmas, theorems, proofs) is merged at
+the point where the slides introduce the topic. Material that is in the companion note but has \emph{no}
+corresponding slide is collected in Appendix~\ref{app:supp} and clearly marked as supplementary.
+
+\textbf{Boxes.} Definitions, theorems, \dots\ are framed in colour; every non-obvious result is followed by a
+blue \textbf{Intuition} box. All figures are original TikZ/pgfplots drawings (no external images). Figures
+labelled ``toy simulation'' were produced by small seeded simulations whose data are embedded in the source.
+
+\textbf{Notation.} The slides call the context distribution $\mu$, which clashes with the arm means $\mu_i$;
+here it is written $\rho$ (as in the companion note, which also writes $z_t$, $\mathcal Z$ for $x_t$, $\calX$).
+The full notation map and a list of small slide/note discrepancies are in Appendix~\ref{app:notes}.
+\end{tcolorbox}
+% =====================================================================
+\newcommand{\civ}[4]{% x, muhat, mu, halfwidth : a confidence interval drawn vertically
+  \draw[thick] (#1,{#2-#4}) -- (#1,{#2+#4});
+  \fill (#1,{#2-#4}) circle (1.8pt); \fill (#1,{#2+#4}) circle (1.8pt); \fill (#1,#2) circle (1.8pt);
+  \fill[green!50!black] (#1,#3) circle (2.4pt);}
+
+\section{Recap: Multi-Armed Bandits \slides{2--18}}
+
+Slides 2--18 recall Lecture~1 (bandits and regret). The formal results used later are
+Hoeffding's inequality, the explore-then-commit regret bound and the UCB regret bound; they are cited in the
+companion note as Theorem~5, Theorem~8 and Corollary~9 of Lecture~1. Short derivations are included here so the
+notes are self-contained.
+
+\subsection{Exploration: the Big Pain of RL \slides{3}}
+
+An RL agent must \emph{carefully and systematically explore}: remember which states it has visited and try to
+reach unexplored regions. The core tension is the \textbf{exploration--exploitation trade-off}: either make the
+best decision given the current information (\emph{exploit}) or collect more information (\emph{explore}),
+i.e.\ sacrifice something now to gain more later. The slide calls it a chicken-and-egg problem: to know which
+option is best you must try it, but trying it costs you if it is not the best.
+
+\begin{intuition}
+Going to your favourite restaurant is the safe choice (exploit); trying the new place round the corner may
+disappoint tonight but could reveal a new favourite for the next hundred dinners (explore). The longer the
+horizon, the more an early experiment is worth; with one dinner left, you should simply exploit. Bandits are
+the simplest model in which this trade-off can be analysed exactly.
+\end{intuition}
+
+\subsection{Multi-Armed Bandit \slides{4--5}}
+
+\begin{definition}[Multi-armed bandit]
+A \emph{multi-armed bandit} (MAB) is a simplified MDP with a \textbf{single state} and $K$ actions (``arms'')
+$a_1,\dots,a_K$. Arm $i$ has an unknown reward distribution $\nu_i$ with mean $\mu_i=\E_{r\sim\nu_i}[r]$.
+For $t=0,\dots,T-1$ the learner (1)~pulls an arm $I_t\in\{1,\dots,K\}$ based on the history and (2)~observes an
+i.i.d.\ reward $r_t\sim\nu_{I_t}$; the rewards of untried arms are \emph{not} observed.
+\end{definition}
+
+\begin{intuition}
+Think of $K$ slot machines. Each pull gives you a payoff \emph{and} information about that one machine only
+(``bandit feedback''). Because information only comes from the arms you choose, \emph{what you do determines
+what you learn}; this is why exploration is needed at all. The question left open by the slide is: ``what are we
+trying to optimise exactly?'' The answer is the regret.
+\end{intuition}
+
+\subsection{Regret \slides{6}}
+
+\begin{definition}[Regret]
+With $\mu^\star=\max_{i\in[K]}\mu_i$,
+\[
+  \Reg_T \;=\; T\mu^\star-\sum_{t=0}^{T-1}\mu_{I_t}.
+\]
+It is the total expected reward obtained by pulling the best arm for $T$ rounds minus the total expected reward of
+the arms actually pulled (the \emph{opportunity loss}).
+\end{definition}
+
+\begin{intuition}
+Writing $\Delta_i=\mu^\star-\mu_i$ and $N_T(i)$ for the number of pulls of arm $i$, regret equals
+$\sum_i \Delta_i N_T(i)$: every pull of a suboptimal arm costs its gap. With means $0.6$ and $0.4$ and $T=100$,
+pulling the worse arm 10 times costs $10\times0.2=2$ reward units, whereas pulling it 50 times costs $10$.
+A good algorithm therefore wants \emph{few} pulls of bad arms, but it can only know an arm is bad by pulling it.
+\end{intuition}
+
+\subsection{Greedy Algorithm \slides{7}}
+
+\begin{algorithm}[Greedy]
+Try each arm once, then commit to the arm with the highest observed reward.
+\end{algorithm}
+
+The problem is that a bad arm (low $\mu_i$) may produce a high reward by chance, since $r\sim\nu_i$ is random.
+
+\begin{example}[Two Bernoulli arms]
+Arm $a_1$ pays $1$ with probability $0.6$ (else $0$); arm $a_2$ pays $1$ with probability $0.4$. Arm $a_1$ is
+clearly better, yet with probability $0.4\times0.4=16\%$ we observe $(r_1,r_2)=(0,1)$ and the greedy rule commits to $a_2$.
+\end{example}
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[font=\small,every node/.style={align=center}]
+  \foreach \i/\l in {0/{$r(a_2)=0$\\ prob.\ $0.6$},1/{$r(a_2)=1$\\ prob.\ $0.4$}}
+     \node at (3.1*\i+1.55,2.7) {\l};
+  \node[left] at (-0.1,1.9) {$r(a_1)=1$\\ prob.\ $0.6$};
+  \node[left] at (-0.1,0.5) {$r(a_1)=0$\\ prob.\ $0.4$};
+  \node[draw,fill=green!25,minimum width=3cm,minimum height=1.3cm] at (1.55,1.9) {$0.36$\\ picks $a_1$ \checkmark};
+  \node[draw,fill=black!10,minimum width=3cm,minimum height=1.3cm] at (4.65,1.9) {$0.24$\\ tie};
+  \node[draw,fill=black!10,minimum width=3cm,minimum height=1.3cm] at (1.55,0.5) {$0.24$\\ tie};
+  \node[draw,fill=red!25,minimum width=3cm,minimum height=1.3cm] at (4.65,0.5) {$0.16$\\ picks $a_2$ $\times$};
+\end{tikzpicture}
+\caption{Outcomes of the first two pulls in the greedy example (probabilities multiply because the arms are independent).}
+\end{figure}
+
+\begin{intuition}
+Greedy treats one noisy sample as the truth. If ties are broken uniformly, the probability of locking onto
+the worse arm is $0.16+0.24=0.40$ (not just the $16\%$ highlighted on the slide), and once committed it loses
+$0.2$ per round forever, so the expected regret is about $0.4\times0.2\,T=0.08\,T$: \emph{linear} in $T$.
+Any sensible algorithm must keep sampling long enough to be confident.
+\end{intuition}
+
+\subsection{Explore \& Commit Algorithm \slides{8}}
+
+\begin{algorithm}[Explore-then-commit, MAB]
+Choose an exploration length $N$ per arm (the slide writes $N=T/K$ as a placeholder; it must satisfy $NK\ll T$, and
+the optimised value is derived on slide~12).
+\begin{enumerate}
+  \item \textbf{Explore.} For $k=1,\dots,K$: pull arm $k$ exactly $N$ times and compute the empirical mean
+        $\hat\mu_k=\frac1N\sum_{i=1}^N r_i$.
+  \item \textbf{Commit.} For $t=NK,\dots,T-1$: pull $\hat I=\argmax_{i\in[K]}\hat\mu_i$.
+\end{enumerate}
+\end{algorithm}
+
+\subsection{Hoeffding Inequality \slides{9--10}}
+
+To say how wrong $\hat\mu$ can be, we need a confidence interval.
+
+\begin{theorem}[Hoeffding inequality (Lecture~1, Thm.~5)]\label{thm:hoeffding}
+Let $X_1,\dots,X_N\in[0,1]$ be i.i.d.\ with mean $\mu$. For every $\delta\in(0,1)$, with probability at least $1-\delta$,
+\[
+ \Bigl|\tfrac1N\textstyle\sum_{i=1}^N X_i-\mu\Bigr|\;\le\;\sqrt{\frac{\ln(2/\delta)}{2N}} \;=\;O\!\Bigl(\sqrt{\tfrac{\ln(1/\delta)}{N}}\Bigr).
+\]
+Applying it to all $K$ arms at once with a union bound (replace $\delta$ by $\delta/K$) gives, with probability at least $1-\delta$,
+$|\hat\mu_i-\mu_i|\le\sqrt{\ln(2K/\delta)/(2N)}$ \emph{simultaneously} for every arm $i$.
+\end{theorem}
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[font=\small]
+  \begin{scope}
+    \civ{0}{2}{1.55}{2}
+    \node[left] at (-0.15,4) {$\hat\mu+\sqrt{\ln(1/\delta)/N}$};
+    \node[left] at (-0.15,2) {$\hat\mu$};
+    \node[left] at (-0.15,0) {$\hat\mu-\sqrt{\ln(1/\delta)/N}$};
+    \node[right,green!50!black] at (0.15,1.55) {$\mu$ (unknown, inside the interval w.p.\ $1-\delta$)};
+  \end{scope}
+  \begin{scope}[xshift=8.2cm]
+    \draw[->] (-0.3,-0.6) -- (-0.3,4.4) node[above] {reward};
+    \civ{1}{2.1}{1.75}{0.9}  \civ{2.5}{2.7}{2.5}{0.9}  \civ{4}{1.5}{1.8}{0.9}
+    \foreach \x/\a in {1/1,2.5/2,4/3} \node[below] at (\x,-0.1) {arm $\a$};
+    \draw[dotted] (0.6,3.0) -- (4.4,3.0) (0.6,1.2) -- (4.4,1.2);
+    \node[font=\scriptsize,align=center] at (2.5,4.3) {same width $\sqrt{\ln(K/\delta)/N}$ for all arms};
+  \end{scope}
+\end{tikzpicture}
+\caption{Left (slide 9): the confidence interval around one empirical mean; the true mean (green) lies inside with
+probability $1-\delta$. Right (slide 10): during commitment, all $K$ intervals hold simultaneously, so the width
+contains $\ln(K/\delta)$. Black dots: $\hat\mu_i$ and interval ends.}
+\end{figure}
+
+\begin{intuition}
+The interval shrinks like $1/\sqrt N$: to halve the uncertainty you need four times the data. With $\delta=0.01$
+(``the bound holds with probability 99\%'') and $N=100$ samples, the half-width is
+$\sqrt{\ln(200)/200}\approx0.163$; with $N=1000$ it is $\approx0.051$. For $K=10$ arms and $N=100$, the union bound
+makes it $\sqrt{\ln(2000)/200}\approx0.195$: the price of ``all arms at once'' is only logarithmic in $K$.
+\end{intuition}
+
+\subsection{Regret Calculation \slides{11--12}}
+
+Let $\hat I=\argmax_i\hat\mu_i$ (empirical best arm) and $I^\star=\argmax_i\mu_i$ (best arm).
+
+\begin{theorem}[Regret of explore-then-commit, MAB]\label{thm:ec-mab}
+Let $L=\ln(2K/\delta)$ (the slides write $\ln(K/\delta)$, absorbing constants into the $O(\cdot)$) and $1\le NK\le T$. With probability at least $1-\delta$,
+\[
+ \Reg_T=\Reg_{\mathrm{explore}}+\Reg_{\mathrm{exploit}}\;\le\; NK+2T\sqrt{\frac{L}{N}} .
+\]
+Choosing $N^\star=\bigl(T\sqrt{L}/K\bigr)^{2/3}$ gives
+$\Reg_T\le 3\,T^{2/3}K^{1/3}L^{1/3}=O\bigl(T^{2/3}K^{1/3}\ln^{1/3}(K/\delta)\bigr)$.
+\end{theorem}
+\begin{proof}
+Let $\varepsilon=\sqrt{L/(2N)}$. By Theorem~\ref{thm:hoeffding} all $|\hat\mu_i-\mu_i|\le\varepsilon$ on an event of probability $\ge1-\delta$. On it,
+\[
+ \mu_{I^\star}\le\hat\mu_{I^\star}+\varepsilon\le\hat\mu_{\hat I}+\varepsilon\le\mu_{\hat I}+2\varepsilon ,
+\]
+so every committed round costs at most $2\varepsilon$. Exploration lasts $NK$ rounds with per-round regret $\le1$, so
+$\Reg_{\mathrm{explore}}\le NK$, and $\Reg_{\mathrm{exploit}}\le(T-NK)\,2\varepsilon\le 2T\sqrt{L/N}$.
+For the second claim let $f(N)=NK+2T\sqrt L\,N^{-1/2}$. Then $f'(N)=K-T\sqrt L\,N^{-3/2}$ vanishes at $N^\star=(T\sqrt L/K)^{2/3}$
+and $f$ is convex, so this is the minimiser. From $N^{\star3/2}=T\sqrt L/K$ we get $2T\sqrt L\,N^{\star-1/2}=2KN^\star$, hence
+$f(N^\star)=3KN^\star=3K^{1/3}T^{2/3}L^{1/3}$ (ignoring rounding of $N^\star$).
+\end{proof}
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}
+\begin{axis}[width=0.85\linewidth,height=6.2cm,xlabel={exploration length $N$ per arm},ylabel={regret bound},
+  xmin=500,xmax=20000,ymin=0,ymax=300000,domain=500:20000,samples=120,no markers,
+  legend style={font=\scriptsize,at={(0.97,0.97)},anchor=north east},scaled y ticks=false,
+  yticklabel style={/pgf/number format/fixed,/pgf/number format/precision=0},
+  xticklabel style={/pgf/number format/fixed,/pgf/number format/precision=0}]
+ \addplot[blue,dashed,thick]{5*x};
+ \addplot[red,dashed,thick]{2*1000000*sqrt(6.9078/x)};
+ \addplot[black,very thick]{5*x+2*1000000*sqrt(6.9078/x)};
+ \addlegendentry{exploration cost $NK$}
+ \addlegendentry{commitment cost $2T\sqrt{L/N}$}
+ \addlegendentry{sum (bound)}
+ \addplot[only marks,mark=*,mark size=2.2pt,black,forget plot] coordinates {(6513,97700)};
+ \draw[dotted] (axis cs:6513,0) -- (axis cs:6513,97700);
+ \node[anchor=south west,font=\scriptsize] at (axis cs:6900,100000) {$N^\star\approx 6513$, bound $\approx 9.8\times10^4$};
+\end{axis}
+\end{tikzpicture}
+\caption{The explore/exploit trade-off inside Theorem~\ref{thm:ec-mab} for $T=10^6$, $K=5$, $\delta=0.01$ ($L\approx6.91$):
+more exploration costs linearly, but shrinks the commitment error like $1/\sqrt N$.}
+\end{figure}
+
+\begin{intuition}
+Too little exploration makes you commit to the wrong arm; too much wastes rounds on bad arms. The optimum balances the
+two curves (at $N^\star$ the commitment term is exactly twice the exploration term). Numerically, for $T=10^6$,
+$K=5$, $\delta=0.01$: $N^\star\approx6{,}513$ pulls per arm, i.e.\ $\approx32{,}600$ exploration rounds (3.3\% of $T$), and
+a regret bound of $\approx9.8\times10^4$, about $9.8\%$ of the maximum possible. Dividing by $T$, the \emph{average}
+regret per round decays like $T^{-1/3}$, i.e.\ it ``approaches~0 as $T\to\infty$'' (slide~12), but slowly.
+\end{intuition}
+
+\subsection{Regret Decaying \slides{13}}
+
+The $T^{2/3}$ rate of explore-then-commit is ``kind of slow''. The slide asks for something like $O(\sqrt T)$ and states that
+$\sqrt T$ is the best possible: it is a \emph{lower bound}, no algorithm can do better in the worst case
+(the standard minimax bound is $\Omega(\sqrt{KT})$; it is quoted, not proved, in the lecture). So we look for a new algorithm.
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}
+\begin{loglogaxis}[width=0.8\linewidth,height=5.6cm,xlabel={horizon $T$},ylabel={regret (constants set to 1)},
+  domain=1e2:1e6,samples=40,no markers,legend style={font=\scriptsize,at={(0.03,0.97)},anchor=north west},grid=both,
+  grid style={black!10}]
+ \addplot[gray,dashed,thick]{x};
+ \addplot[red,thick]{x^(2/3)};
+ \addplot[blue,thick]{x^(1/2)};
+ \addlegendentry{linear (greedy)}
+ \addlegendentry{$T^{2/3}$ (explore-then-commit)}
+ \addlegendentry{$\sqrt T$ (optimal rate)}
+\end{loglogaxis}
+\end{tikzpicture}
+\caption{Growth rates compared (slide 13 describes them in words). On a log--log plot a rate $T^\alpha$ is a line of slope~$\alpha$.}
+\end{figure}
+
+\begin{intuition}
+For $T=10^6$: $\sqrt T=10^3$ versus $T^{2/3}=10^4$. A tenfold gap, i.e.\ per-round regret $0.1\%$ versus $1\%$ (with all constants set to~1).
+\end{intuition}
+
+\subsection{Statistics to Maintain \& Confidence \slides{14}}
+
+To compute confidence bounds \emph{while} learning we keep, for each arm $i$ at time $t$:
+\[
+ N_t(i)=\sum_{\tau=0}^{t-1}\ind\{I_\tau=i\},\qquad
+ \hat\mu_t(i)=\frac{1}{N_t(i)}\sum_{\tau=0}^{t-1}\ind\{I_\tau=i\}\,r_\tau ,
+\]
+and, with probability $1-\delta$ (simultaneously for all arms and all times),
+\[
+ |\hat\mu_t(i)-\mu_i|\le\sqrt{\frac{\ln(KT/\delta)}{N_t(i)}} .
+\]
+
+\begin{intuition}
+Unlike explore-then-commit, arms now have \emph{different} sample sizes, so each arm gets its \emph{own} interval width.
+The $KT$ inside the logarithm is a union bound over every (arm, time) pair, because the algorithm will consult these bounds at every round.
+\end{intuition}
+
+\subsection{Optimism in the Face of Uncertainty \slides{15}}
+
+Pick the arm with the highest \emph{upper} confidence bound (the top of its interval).
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[font=\small,y=3.4cm]
+  \civ{1}{0.55}{0.5}{0.2}  \civ{3.2}{0.5}{0.6}{0.35}  \civ{5.4}{0.6}{0.58}{0.1}
+  \foreach \x/\a in {1/1,3.2/2,5.4/3} \node[below=3pt] at (\x,0.15) {arm $\a$};
+  \draw[red!70!black,thick,rounded corners=2pt] (2.7,0.78) rectangle (3.7,0.92);
+  \draw[dotted,red!70!black] (0.6,0.85) -- (6.0,0.85);
+  \node[red!70!black,right,font=\footnotesize] at (6.0,0.85) {highest UCB $\Rightarrow$ play arm 2};
+  \node[font=\footnotesize,align=center] at (1,1.15) {tried often\\(medium)};
+  \node[font=\footnotesize,align=center] at (3.2,1.35) {tried rarely\\(wide)};
+  \node[font=\footnotesize,align=center] at (5.4,0.98) {tried a lot\\(narrow)};
+  \draw[->] (-0.5,0.0) -- (-0.5,1.2) node[above] {reward};
+\end{tikzpicture}
+\caption{Optimism (slide 15). Arm~2 has a \emph{lower} empirical mean than arm~3, but its wide interval (few pulls) gives the highest upper bound, so UCB explores it.
+Green dots: true means.}
+\end{figure}
+
+\subsection{UCB Algorithm \slides{16}}
+
+\begin{algorithm}[UCB]\label{alg:ucb}
+Pull each arm once (first $K$ rounds). For $t=K,\dots,T-1$:
+\begin{enumerate}
+  \item pick $\displaystyle I_t=\argmax_{i\in[K]}\Bigl(\hat\mu_t(i)+\sqrt{\tfrac{\ln(KT/\delta)}{N_t(i)}}\Bigr)$;
+  \item observe the reward and update $N_t,\hat\mu_t$.
+\end{enumerate}
+The square-root \emph{reward bonus} is large for arms not tried many times, which drives exploration.
+\end{algorithm}
+
+\begin{intuition}
+UCB acts as if each arm were as good as it \emph{could plausibly be}. Under-sampled arms get an inflated score and are tried;
+if the optimism was unjustified, the empirical mean drops and $N_t(i)$ grows, so the bonus shrinks and the arm is abandoned.
+Nothing is hard-coded about \emph{when} to stop exploring: the schedule emerges from the data. Exploration and exploitation are fused into one rule.
+\end{intuition}
+
+\subsection{UCB Algorithm: Regret \slides{17}}
+
+\begin{theorem}[Regret of UCB (Lecture~1)]\label{thm:ucb}
+Let $L'=\ln(2KT/\delta)$. With probability at least $1-\delta$, UCB satisfies
+$\Reg_T\le K+4\sqrt{KT\,L'}=\widetilde O(\sqrt{KT})$.
+\end{theorem}
+\begin{proof}
+On the event that all intervals hold, write $w_t=\sqrt{L'/N_t(I_t)}$. Then
+\[
+ \mu^\star\le \hat\mu_t(I^\star)+\sqrt{\tfrac{L'}{N_t(I^\star)}}\le \hat\mu_t(I_t)+w_t\le\mu_{I_t}+2w_t,
+\]
+so the per-round regret is $\mu^\star-\mu_{I_t}\le 2w_t$ (the first inequality is validity of the interval for $I^\star$, the second is the UCB rule, the third is validity for $I_t$). Summing over $t\ge K$,
+\[
+ \sum_{t=K}^{T-1}\frac1{\sqrt{N_t(I_t)}}=\sum_{i}\sum_{n=1}^{N_T(i)-1}\frac1{\sqrt n}\le\sum_i 2\sqrt{N_T(i)}\le 2\sqrt{K\textstyle\sum_iN_T(i)}\le2\sqrt{KT},
+\]
+by $\sum_{n\le m}n^{-1/2}\le2\sqrt m$ and Cauchy--Schwarz. The first $K$ rounds cost at most $K$. Hence $\Reg_T\le K+2\sqrt{L'}\cdot2\sqrt{KT}$.
+\end{proof}
+
+\begin{intuition}
+Each arm contributes $\sum_{n\le N}1/\sqrt n\approx2\sqrt N$ to the regret sum, and the total number of pulls is capped at $T$; the worst case is spreading
+pulls evenly, which yields $\sqrt{KT}$. For $K=5$, $T=10^6$ the \emph{rate} is $\approx\sqrt{5\cdot10^6}\approx2.2\times10^3$ (times $\sqrt{\ln}$ and a constant),
+versus the $T^{2/3}$ rate of explore-then-commit which is of order $10^4$. (The slide cites an external note for details, \url{https://wensun.github.io/CS4789_data/UCB_note_new.pdf}.)
+\end{intuition}
+% =====================================================================
+\section{From Multi-Armed to Contextual Bandits \slides{19--24}}
+
+\subsection{From Multi-Armed to Contextual Bandits \slides{19--20}}
+
+A multi-armed bandit is \emph{stateless}: an action leads to a reward. A \textbf{contextual bandit} adds a context (state)
+that is observed before acting and that influences which action is best.
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[>=Stealth,font=\small,
+  blk/.style={draw,fill=blue!30,rounded corners=1pt,minimum width=1.9cm,minimum height=0.7cm,font=\small\bfseries}]
+  \node[blk] (a1) at (0,1.6) {Action};  \node[blk] (r1) at (3.4,1.6) {Reward};
+  \draw[->,blue!60!black] (a1) -- (r1);
+  \node[align=left,anchor=west] at (5.0,1.6) {\textbf{Multi-armed bandit}\\ (stateless)};
+  \draw[black!25] (-1.4,0.95) -- (8,0.95);
+  \node[blk] (s2) at (-1.2,0) {State};  \node[blk] (a2) at (1.7,0) {Action};  \node[blk] (r2) at (4.6,0) {Reward};
+  \draw[->,blue!60!black] (s2) -- (a2);  \draw[->,blue!60!black] (a2) -- (r2);
+  \draw[->,blue!60!black] (s2.south) to[bend right=40] (r2.south);
+  \node[align=left,anchor=west] at (6.0,0) {\textbf{Contextual bandit}};
+\end{tikzpicture}
+\caption{Slides 19--20 redrawn. In a contextual bandit the reward depends on the \emph{state/context and the action}
+(the curved arrow).}
+\end{figure}
+
+\subsection{Contextual Bandits: Interaction \slides{21--23}}
+
+\begin{definition}[Contextual bandit]\label{def:cb}
+A contextual bandit is a distribution $\rho$ over a context set $\calX$ together with a mean-reward function
+$r:\calX\times\calA\to[0,1]$, where $|\calA|=K$. For $t=0,1,\dots,T-1$:
+\begin{enumerate}
+ \item a context $x_t\sim\rho$ is drawn i.i.d.\ and \emph{revealed};
+ \item the learner picks $a_t\in\calA$, possibly at random, using $x_t$ and the history;
+ \item a reward $r_t$ with $\E[r_t\mid x_t,a_t]=r(x_t,a_t)$ is revealed, and nothing is revealed about the other $K-1$ actions.
+\end{enumerate}
+\end{definition}
+
+\begin{remark}
+For simplicity the slides (slide~22) assume \emph{deterministic} rewards $r_t=r(x_t,a_t)$, ``as the context is the challenge here'';
+the companion note stresses that every result below holds with noisy rewards too (the proof of Lemma~\ref{lem:ips}
+conditions on the noise).
+\end{remark}
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[>=Stealth,font=\small,
+  box/.style={draw,fill=cyan!55!blue!70,rounded corners=3pt,minimum width=2.3cm,minimum height=3.1cm,text=white,align=center,font=\small\bfseries}]
+  \node[box] (env) at (0,0) {Environment};
+  \node[box] (alg) at (6.2,0) {Learning\\algorithm};
+  \draw[->,thick] ($(env.east)+(0,0.9)$) -- node[above] {$x_t\sim\rho$} ($(alg.west)+(0,0.9)$);
+  \draw[->,thick] ($(alg.west)+(0,0)$) -- node[above] {$a_t$} ($(env.east)+(0,0)$);
+  \draw[->,thick] ($(env.east)+(0,-0.9)$) -- node[above] {$r_t:=r(x_t,a_t)$} ($(alg.west)+(0,-0.9)$);
+\end{tikzpicture}
+\caption{The interaction protocol (slide 23). After the reward, a new round starts: contexts are \emph{not} influenced by past actions, they are sampled i.i.d.}
+\end{figure}
+
+\begin{intuition}
+The i.i.d.\ context is what separates a contextual bandit from a full MDP: your action affects your \emph{reward} today but not the \emph{state}
+you will see tomorrow, so there are no long-term consequences to plan around. It is a bandit with side information. The difficulty that remains is that
+the best action depends on the context, and you only see the reward of the action you actually took.
+\end{intuition}
+
+\subsection{Contextual Bandits: Example \slides{24}}
+
+A major application is \textbf{recommendation systems}: the \emph{context} is user information (age, height, weight, job, \dots), the \emph{arms} are items to recommend
+(news, movies, \dots), and each arm has a click-through rate (0/1 reward) that we want to maximise. The question: how do we decide which item to propose next \emph{in a personalised way}?
+
+\begin{example}\label{ex:reco}
+Two equally frequent user types and two items, with click-through rates
+
+\smallskip
+\begin{center}
+\begin{tabular}{lcc}\toprule
+ & news & movies\\\midrule
+ younger users & $0.10$ & $0.30$\\ older users & $0.35$ & $0.15$\\\bottomrule
+\end{tabular}
+\end{center}
+A context-blind bandit sees an average CTR of $0.225$ for both items and earns $0.225$ per round at best, whereas the personalised rule
+(movies for younger, news for older) earns $\tfrac12(0.30+0.35)=0.325$.
+\end{example}
+
+\begin{intuition}
+Ignoring context averages away exactly the structure that matters. But learning one separate bandit per context is hopeless when contexts are
+many or continuous (every user is unique). The remedy, developed next, is to learn a \emph{policy} from a restricted class $\Pi$ that generalises across contexts.
+\end{intuition}
+
+% =====================================================================
+\section{Policy \slides{25}}
+
+\begin{definition}[Policy]\label{def:policy}
+A policy $\pi$ is a mapping from (all) states/contexts to actions that determines how the agent selects actions. It can be
+\emph{deterministic}, $a=\pi(x)$, or \emph{stochastic}, $\pi(a\mid x)$ (equivalently $a\sim\pi(\cdot\mid x)$). Given a class $\Pi$ of policies, the
+\emph{value} of $\pi$ is its expected reward, $V(\pi)=\E_{x\sim\rho}\bigl[r(x,\pi(x))\bigr]$.
+\end{definition}
+
+\begin{intuition}
+A policy is a rulebook: ``if the user looks like this, show that''. For a finite context set $\calX$ with $K$ actions there are $K^{|\calX|}$ deterministic policies:
+with $|\calX|=10$ and $K=3$ that is $3^{10}=59{,}049$, huge, but its \emph{logarithm} is only $10\ln3\approx10.99$. It is this logarithm, $\ln|\Pi|$, that will govern the regret.
+\end{intuition}
+
+% =====================================================================
+\section{Contextual Bandits: Regret \slides{26}}
+
+The optimal policy in the class is $\pi^\star=\argmax_{\pi\in\Pi}\E_{x\sim\rho}\,r(x,\pi(x))=\argmax_{\pi\in\Pi}V(\pi)$.
+At every round $a_t=\pi_t(x_t)$ is selected and a reward received.
+
+\begin{definition}[Contextual regret]\label{def:reg}
+\[
+ \mathrm{Reg}(T)\;=\;T\,V(\pi^\star)-\sum_{t=0}^{T-1}V(\pi_t)
+ \;=\;T\,\E_{x\sim\rho}\bigl[r(x,\pi^\star(x))\bigr]-\sum_{t=0}^{T-1}\E_{x\sim\rho}\bigl[r(x,\pi_t(x))\bigr],
+\]
+where $\pi_t$ is the policy the learner is using at round $t$ (note: \emph{it changes at every iteration}).
+\end{definition}
+
+\begin{intuition}
+The first term is the total expected reward if we always used the best policy; the second is what our sequence of learned policies earns.
+If $\calX$ is a single context, $V(\pi)=r(a)$ and this is exactly the multi-armed regret of Section~1. In the recommendation example the
+best policy earns $0.325$ per round, so a context-blind learner has regret at least $(0.325-0.225)T=0.1\,T$, linear in $T$.
+\end{intuition}
+
+% =====================================================================
+\section{Explore \& Commit Algorithm \slides{27--31}}
+
+\subsection{The algorithm \slides{27}}
+
+\begin{algorithm}[Explore-then-commit for contextual bandits]\label{alg:ec}
+Input: horizon $T$, policy class $\Pi$, exploration budget $N$.
+\begin{enumerate}
+ \item \textbf{Explore.} For $t=0,\dots,N-1$: observe $x_t\sim\rho$, draw $a_t\sim\Unif(\calA)$, observe $r_t=r(x_t,a_t)$, and build for $x_t$ an
+       \emph{unbiased estimate} $\rh_t$ of the reward vector $\bigl(r(x_t,a)\bigr)_{a\in\calA}$.
+ \item \textbf{Fit.} Compute the policy $\displaystyle\hat\pi\in\argmax_{\pi\in\Pi}\sum_{t=0}^{N-1}\rh_t[\pi(x_t)]$.
+ \item \textbf{Commit.} For $t=N,\dots,T-1$: observe $x_t\sim\rho$ and play $a_t=\hat\pi(x_t)$.
+\end{enumerate}
+\end{algorithm}
+
+The missing ingredient is the unbiased estimate $\rh_t$: we only observe the reward of \emph{one} action.
+
+\subsection{Unbiased estimates: inverse propensity scoring \slides{27--29}}
+
+An estimator $\hat\theta$ is \emph{unbiased} if $\E[\hat\theta]=\theta$, i.e.\ $\mathrm{bias}(\hat\theta)=\E[\hat\theta]-\theta=0$ (it is centred on the true value).
+The goal here: $\E_{a_t\sim p}\bigl[\rh_t[a]\bigr]=r(x_t,a)$ for all $a$.
+
+\begin{definition}[Inverse propensity scoring (IPS)]\label{def:ips}
+Suppose that at round $t$ the action was drawn from a \emph{known} distribution $p_t$ with $p_t(a)>0$ for all $a$. The IPS reward vector is
+\[
+ \rh_t[a]=\frac{r_t\,\ind[a_t=a]}{p_t(a)},\qquad a\in\calA,
+\]
+i.e.\ the vector with a single non-zero entry $r_t/p_t(a_t)$ at the played action. Under uniform exploration, $p_t(a)=1/K$ and
+$\rh_t[a]=\bigl\{K r_t$ if $a=a_t$, $0$ otherwise$\bigr\}$ (slide 29: ``$r_t/(1/|\calA|)$'').
+\end{definition}
+
+\begin{lemma}[IPS is unbiased]\label{lem:ips}
+For every context $x_t$ and every action $a$, $\E_{a_t\sim p_t}\bigl[\rh_t[a]\mid x_t\bigr]=r(x_t,a)$. Consequently
+$\E\bigl[\rh_t[\pi(x_t)]\bigr]=V(\pi)$ for every policy $\pi$.
+\end{lemma}
+\begin{proof}
+Condition on $x_t$ and take the expectation over $a_t\sim p_t$ and the reward noise:
+\[
+ \E\!\left[\frac{r_t\,\ind[a_t=a]}{p_t(a)}\right]=\sum_{a'\in\calA}p_t(a')\,\frac{\E[r_t\mid x_t,a']\,\ind[a'=a]}{p_t(a)}
+ =p_t(a)\,\frac{r(x_t,a)}{p_t(a)}=r(x_t,a).
+\]
+Averaging over $x_t\sim\rho$ gives $\E[\rh_t[\pi(x_t)]]=V(\pi)$.
+\end{proof}
+
+\begin{intuition}
+The division by $p_t(a)$ ``removes the asymmetry due to sampling'' (slide 28): an action played half as often has its rewards counted twice as heavily,
+exactly like survey weights that up-weight under-sampled groups. A concrete check with $K=2$, uniform exploration and $r(x,2)=0.8$: whenever arm~2 is played
+(half the time) we record $\rh=(0,\,1.6)$, otherwise $(\cdot,\,0)$, so the average is $\tfrac12\cdot1.6+\tfrac12\cdot0=0.8$. The estimator is unbiased
+but \emph{noisy}: a single observation is either $0$ or $Kr_t$, far from the true mean (made precise in Lemma~\ref{lem:range}, Appendix~\ref{app:supp}).
+Importantly, $\rh_t$ is defined for \emph{all} actions even though only one is observed, which is what lets us evaluate policies that would have acted differently.
+\end{intuition}
+
+\subsection{Fitting a policy \slides{27}}
+
+Step~2 of Algorithm~\ref{alg:ec} maximises the \emph{counterfactual value estimate}
+$\hat V(\pi)=\frac1N\sum_{t<N}\rh_t[\pi(x_t)]$ over $\Pi$. By Lemma~\ref{lem:ips} each summand has mean $V(\pi)$, so $\hat V(\pi)$ estimates $V(\pi)$ for \emph{every} $\pi\in\Pi$ from the \emph{same} exploration data.
+
+\begin{intuition}
+Under uniform exploration, a round only ``counts'' for policy $\pi$ if $\pi(x_t)$ happens to equal the randomly played $a_t$ (probability $1/K$), and then it counts with weight $K r_t$.
+In the toy problem below (two contexts, two arms) the four deterministic policies have values
+$V(a_1,a_1)=0.525$, $V(a_1,a_2)=0.675$, $V(a_2,a_1)=0.425$, $V(a_2,a_2)=0.575$ (red~$\to$~first entry, blue~$\to$~second), so $\pi^\star=(a_1,a_2)$.
+Because $\Pi$ here contains \emph{all} context-to-action maps, the maximisation splits into one independent argmax per context; for a restricted class (e.g.\ linear policies) it does not.
+\end{intuition}
+
+\subsection{Simulation \slides{30}}
+
+Slide~30 shows an animation of the explore phase: a timeline of contexts (red/blue) and, per context, the running estimates of each arm's reward. Here is an original static version.
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}
+  \draw[black!50] (0,0) rectangle (8,0.35);
+  \foreach \x/\c in {0/red!55,0.1/blue!55,0.2/red!55,0.3/red!55,0.4/blue!55,0.5/red!55,0.6/blue!55,0.7/red!55,0.8/blue!55,0.9/red!55} {
+    \fill[\c] (8*\x,0) rectangle (8*\x+0.08,0.35);
+  }
+  \node[left,font=\scriptsize] at (0,0.175) {contexts};
+  \node[below,font=\scriptsize] at (0,0) {$t=1$}; \node[below,font=\scriptsize] at (8,0) {$t=80$};
+\end{tikzpicture}\\[4pt]
+\begin{tikzpicture}
+\begin{groupplot}[group style={group size=2 by 1,horizontal sep=1.6cm},width=0.47\linewidth,height=5cm,
+  xmin=1,xmax=80,ymin=0,ymax=1.4,xlabel={$t$ (explore)},no markers,title style={font=\small}]
+ \nextgroupplot[title={context red},ylabel={IPS estimate of $r(\text{red},a)$}]
+  \addplot[orange!90!black,thick] coordinates {(1,0.00) (10,0.65) (20,0.52) (40,0.62) (60,0.64) (80,0.65)};
+  \addplot[blue!70!black,thick] coordinates {(1,0.00) (10,0.90) (20,0.40) (40,0.48) (60,0.44) (80,0.45)};
+  \addplot[orange!90!black,dashed] coordinates {(1,0.65) (80,0.65)};
+  \addplot[blue!70!black,dashed] coordinates {(1,0.45) (80,0.45)};
+ \nextgroupplot[title={context blue},ylabel={IPS estimate of $r(\text{blue},a)$},legend style={font=\scriptsize,at={(0.97,0.97)},anchor=north east}]
+  \addplot[orange!90!black,thick] coordinates {(1,0.00) (10,0.35) (20,0.42) (40,0.39) (60,0.40) (80,0.40)};
+  \addplot[blue!70!black,thick] coordinates {(1,0.00) (10,0.80) (20,0.62) (40,0.68) (60,0.69) (80,0.70)};
+  \addplot[orange!90!black,dashed] coordinates {(1,0.40) (80,0.40)};
+  \addplot[blue!70!black,dashed] coordinates {(1,0.70) (80,0.70)};
+  \addlegendentry{arm 1 (estimate)}
+ \addlegendentry{arm 2 (estimate)}
+ \addlegendentry{arm 1 (true)}
+ \addlegendentry{arm 2 (true)}
+\end{groupplot}
+\end{tikzpicture}
+\caption{Toy simulation of the explore phase (seeded; $N=80$, uniform exploration, two equally likely contexts, deterministic rewards
+$r(\text{red},\cdot)=(0.65,0.45)$, $r(\text{blue},\cdot)=(0.40,0.70)$). Solid: per-context IPS averages; dashed: true values. They are noisy at first but
+settle on the correct ordering, so $\hat\pi=\pi^\star$ in this run (about $81\%$ of 2000 seeds at $N=80$).}
+\end{figure}
+
+\subsection{Explore \& Commit Algorithm: Regret \slides{31}}
+
+The slide states that the regret ``also depends on the size of the class of policies''. Here is the precise statement.
+
+\begin{theorem}[Regret of contextual explore-then-commit]\label{thm:cec}
+Let $\Pi$ be finite and run Algorithm~\ref{alg:ec} with $1\le N\le T$. With probability at least $1-\delta$,
+\[
+ \mathrm{Reg}(T)\;\le\;N+TK\sqrt{\frac{2\ln(2|\Pi|/\delta)}{N}},
+\]
+and choosing $N$ to minimise the right-hand side gives
+\[
+ \mathrm{Reg}(T)\;\le\;3\cdot2^{-1/3}\,T^{2/3}K^{2/3}\ln^{1/3}\!\Bigl(\frac{2|\Pi|}{\delta}\Bigr).
+\]
+\end{theorem}
+\begin{proof}
+Write $\hat V(\pi)=\frac1N\sum_{t<N}\rh_t[\pi(x_t)]$. By Lemma~\ref{lem:ips} the summands are i.i.d.\ with mean $V(\pi)$ and by Lemma~\ref{lem:range} (Appendix~\ref{app:supp})
+they lie in $[0,K]$. Hoeffding's inequality (Theorem~\ref{thm:hoeffding}, rescaled by $K$) gives, for one fixed $\pi$ and any $\delta'\in(0,1)$,
+\[
+ \Prob\Bigl(|\hat V(\pi)-V(\pi)|>K\sqrt{\ln(2/\delta')/(2N)}\Bigr)\le\delta'.
+\]
+Take $\delta'=\delta/|\Pi|$ and a union bound over the $|\Pi|$ policies: with probability at least $1-\delta$, every $\pi\in\Pi$ satisfies
+$|\hat V(\pi)-V(\pi)|\le\varepsilon$ with $\varepsilon=K\sqrt{\ln(2|\Pi|/\delta)/(2N)}$.
+On that event, the same three-step chain as in Theorem~\ref{thm:ec-mab} applies to $\hat\pi$, which maximises $\hat V$:
+\[
+ V(\pi^\star)\le\hat V(\pi^\star)+\varepsilon\le\hat V(\hat\pi)+\varepsilon\le V(\hat\pi)+2\varepsilon .
+\]
+Exploration contributes at most $N$ (each round's regret is at most $1$); commitment contributes at most $(T-N)\cdot2\varepsilon\le2T\varepsilon$. Adding them gives the first display.
+
+For the second, set $c=\sqrt{2\ln(2|\Pi|/\delta)}$, so the bound reads $f(N)=N+TKc\,N^{-1/2}$. As in the MAB case, $f$ is convex and
+$f'(N)=1-\tfrac12TKc\,N^{-3/2}$ vanishes at $N^\star=(TKc/2)^{2/3}$. Writing $u=(TKc/2)^{1/3}$ gives $f(N^\star)=u^2+2u^2=3(TKc/2)^{2/3}$, and substituting
+$c^{2/3}=2^{1/3}\ln^{1/3}(2|\Pi|/\delta)$ gives the claim.
+\end{proof}
+
+\begin{intuition}
+It is the same trade-off as in the MAB: exploring costs $N$ in regret; each extra sample sharpens \emph{all} policy estimates simultaneously, and the union bound over policies only
+costs a $\ln|\Pi|$ factor inside the square root. Numerically, for $|\Pi|=10^6$, $K=3$, $\delta=0.05$, $T=10^6$: $\ln(2|\Pi|/\delta)\approx17.5$,
+the optimal exploration length is $N^\star\approx4.3\times10^4$ rounds ($4.3\%$ of $T$) and the bound is $\approx1.29\times10^5$ ($12.9\%$ of $T$).
+Making the class a million times richer, from $|\Pi|=10^6$ to $10^{12}$, multiplies the bound only by $(3.15/2.60)\approx1.21$ (the factor $\ln^{1/3}(2|\Pi|/\delta)$ goes $2.02\to2.60\to3.15$ for $|\Pi|=10^2,10^6,10^{12}$).
+The price of context is thus \emph{logarithmic in the number of policies} but, because uniform exploration wastes a factor $K$ per observation, it grows with $K$.
+\end{intuition}
+
+\begin{remark}[On the exponent of $K$]
+Slide~31 prints the bound as $O\bigl(T^{2/3}K^{1/3}\ln^{1/3}(|\Pi|)\bigr)$, while the proof above (which only uses the \emph{range} $[0,K]$ of the IPS terms) yields $K^{2/3}$.
+The $K^{1/3}$ form is the known sharper rate: using the \emph{variance} bound of Lemma~\ref{lem:range} with Bernstein's inequality instead of Hoeffding's gives
+deviations of order $\sqrt{K\ln(|\Pi|/\delta)/N}$ and hence $T^{2/3}K^{1/3}\ln^{1/3}(|\Pi|/\delta)$ plus a lower-order term. This refinement is a standard fact but is
+\emph{not} proved in the companion note, so the theorem is stated with the exponent that is actually proved.
+\end{remark}
+% =====================================================================
+\section{\texorpdfstring{$\epsilon$}{epsilon}-Greedy \slides{32--35}}
+
+Instead of fixing a threshold for exploring and then committing, we can \emph{interleave} exploration and exploitation.
+
+\begin{algorithm}[$\epsilon$-greedy for contextual bandits]\label{alg:eg}
+For $t=0,1,\dots,T-1$:
+\begin{enumerate}
+ \item observe $x_t\sim\rho$;
+ \item draw $a_t\sim p_t=(1-\epsilon_t)\,\delta\bigl(\pi^t(x_t)\bigr)+\epsilon_t\,\Unif(\calA)$;
+ \item observe $r_t$ and form the IPS vector $\rh_t$ using the propensity $p_t(a_t)$ \emph{actually used};
+ \item update the policy: $\pi^{t+1}\in\argmax_{\pi\in\Pi}\sum_{i\le t}\rh_i[\pi(x_i)]$.
+\end{enumerate}
+Gradually \textbf{decay} $\epsilon_t$ towards zero (slide 34, ``Step 3'').
+\end{algorithm}
+
+Here $\delta(\pi^t(x_t))$ is the Dirac delta placing all the mass on the action $\pi^t(x_t)$, so explicitly
+$p_t(a)=(1-\epsilon_t)\ind[a=\pi^t(x_t)]+\epsilon_t/K$. The two extremes are $\epsilon=0$ (pure exploitation) and $\epsilon=1$ (uniform exploration).
+Since $p_t(a)\ge\epsilon_t/K>0$, IPS is well defined, and Lemma~\ref{lem:ips} applies at every round (it only needs $p_t$ to be known, and $p_t$ may change with $t$).
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[>=Stealth,font=\small]
+ \begin{scope}
+  \draw[->] (-0.2,0) -- (4.2,0) node[right] {$x$}; \draw[->] (0,-0.1) -- (0,1.9) node[above] {$y$};
+  \draw[->,very thick,blue!70!black] (2.4,0) -- (2.4,1.5); \fill[blue!70!black] (2.4,1.5) circle (1.5pt);
+  \node[blue!70!black,above right] at (2.4,1.2) {$\delta(x-a)$}; \node[below] at (2.4,0) {$a$};
+  \node[align=center,font=\footnotesize] at (2,-1.0) {Dirac delta: all the mass\\on a single point};
+ \end{scope}
+ \begin{scope}[xshift=7.2cm]
+  \draw[->] (-0.2,0) -- (4.0,0); \draw[->] (0,-0.1) -- (0,2.4) node[above] {$p_t(a)$};
+  \foreach \x/\n in {0.7/1,1.9/2,3.1/3}{\node[below] at (\x,0) {arm \n};}
+  \foreach \x in {0.7,1.9,3.1}{\fill[orange!70] (\x-0.4,0) rectangle (\x+0.4,0.3);}
+  \fill[blue!50] (1.9-0.4,0.3) rectangle (1.9+0.4,2.1);
+  \node[right,font=\scriptsize] at (3.5,0.15) {$\epsilon/K=0.1$};
+  \node[right,font=\scriptsize,blue!50!black] at (2.35,1.2) {$1-\epsilon=0.7$};
+  \node[above,font=\scriptsize] at (1.9,2.1) {$0.8$};
+  \node[above,font=\scriptsize] at (0.7,0.3) {$0.1$}; \node[above,font=\scriptsize] at (3.1,0.3) {$0.1$};
+  \node[align=center,font=\footnotesize] at (1.9,-1.0) {$p_t$ for $K=3$, $\epsilon=0.3$,\\greedy action $=$ arm 2};
+ \end{scope}
+\end{tikzpicture}
+\caption{Left (slide 33): the Dirac delta used in $p_t$. Right: the resulting mixture: every arm gets a floor $\epsilon/K$ of exploration probability and the greedy arm additionally gets $1-\epsilon$.}
+\end{figure}
+
+\begin{intuition}
+$\epsilon_t$ is a dial between ``trust what I have learned'' and ``roll a die''. The floor $\epsilon_t/K$ is what guarantees every action keeps being sampled so
+that IPS stays valid. The dial must be turned down \emph{gradually}: from $r_t\le1$ and $p_t(a)\ge\epsilon_t/K$ we get $0\le\rh_t[a]\le K/\epsilon_t$, so if $\epsilon_t$
+collapses, the estimates of rarely played actions become extremely noisy (e.g.\ $\epsilon_t=0.01$, $K=3$ allows values up to $300$). Note that, unlike
+explore-then-commit, learning never stops, so the policy keeps adapting. (Neither the slides nor the companion note state a regret bound for $\epsilon$-greedy;
+slide 35 only shows a simulation.)
+\end{intuition}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1790925011807.png}
+	\caption{Toy simulation of $\epsilon$-greedy (seeded, $T=90$): early on most rounds are exploratory (open red circles); as $\epsilon_t$ decays the learner mostly exploits its current policy, which here becomes
+$\pi=(\text{red}\to\text{arm 1},\ \text{blue}\to\text{arm 2})=\pi^\star$ (27 of the 90 rounds were exploratory). This ends optimal in about $71\%$ of 1000 seeds at $t=90$, so individual runs vary; same colours and dashed true values as the earlier figure.}\label{fig:1790925011807}
+\end{figure}
+
+
+
+
+\section{Real World Example \slides{36}}
+
+Slide 36 points to a production use of contextual-bandit algorithms: Microsoft's \emph{Azure Personalizer}
+(\url{https://azure.microsoft.com/en-us/products/cognitive-services/personalizer/}), which the slide notes is \emph{going out of service in October 2026}
+(the slide shows a screenshot of the product page, not reproduced here).
+
+\begin{intuition}
+Personalising content maps one-to-one onto the model of this lecture: the context is the user/page features, the actions are the candidate items, and the reward is a click or
+other feedback. Each shown item produces feedback for \emph{that} item only, which is why IPS-style estimates and exploration are needed in practice. Whether a particular product is still available is a
+separate matter from the algorithms, which remain standard.
+\end{intuition}
+
+% =====================================================================
+\section{Bayes Theorem Recall \slides{37}}
+
+\begin{theorem}[Bayes' theorem]\label{thm:bayes}
+For a hypothesis $H$ and data $D$ with $p(D)>0$,
+\[
+ p(H\mid D)=\frac{p(H)\,p(D\mid H)}{p(D)} .
+\]
+\end{theorem}
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[font=\small,>=Stealth]
+  \node[draw,ellipse,inner sep=4pt] (post) at (0,0) {$p(H\mid D)$};
+  \node at (1.5,0) {$=$};
+  \node[draw,ellipse,inner sep=4pt] (prior) at (3.0,0.35) {$p(H)$};
+  \node[draw,ellipse,inner sep=4pt] (lik) at (5.0,0.35) {$p(D\mid H)$};
+  \draw (3.9,-0.15) -- (6.1,-0.15);
+  \node[draw,ellipse,inner sep=4pt] (ev) at (5.0,-0.65) {$p(D)$};
+  \node[align=center,font=\footnotesize] (t1) at (-1.6,2.0) {posterior};
+  \node[align=center,font=\footnotesize] (t2) at (2.2,2.2) {prior: what you believed\\before seeing the evidence};
+  \node[align=center,font=\footnotesize] (t3) at (6.6,2.2) {likelihood of seeing the evidence\\if your hypothesis is correct};
+  \node[align=center,font=\footnotesize] (t4) at (6.9,-2.1) {normalising constant: likelihood of\\the evidence under any circumstances};
+  \draw (t1.south) -- (post.north west);  \draw (t2.south) -- (prior.north);
+  \draw (t3.south) -- (lik.north);        \draw (t4.north) -- (ev.south east);
+\end{tikzpicture}
+\caption{The annotated Bayes formula of slide 37.}
+\end{figure}
+
+\begin{intuition}
+Posterior $\propto$ prior $\times$ likelihood; $p(D)$ only renormalises. Example: an ad is either \emph{good} (CTR $0.6$) or \emph{bad} (CTR $0.4$), prior $50/50$. After observing one click,
+$p(\text{good}\mid\text{click})=\frac{0.5\cdot0.6}{0.5\cdot0.6+0.5\cdot0.4}=0.6$; after two clicks the odds multiply by $0.6/0.4$ again, giving odds $2.25$, i.e.\ $p\approx0.69$.
+Each observation nudges belief towards the hypotheses that explain it best. This is the engine of Bayesian bandits.
+\end{intuition}
+
+% =====================================================================
+\section{Bayesian Bandits \slides{38}}
+
+So far we made \emph{no assumption} about the reward distributions $\nu_i$; we only derived bounds that hold for any bounded rewards. In \textbf{Bayesian bandits}:
+\begin{itemize}
+ \item we exploit \emph{prior} knowledge of the rewards;
+ \item we update a \emph{posterior} distribution of rewards from the history;
+ \item we use the posterior to guide exploration, via \textbf{upper confidence bounds} (Bayesian UCB) or \textbf{probability matching} (Thompson sampling).
+\end{itemize}
+
+\begin{intuition}
+A frequentist guarantee protects you against \emph{any} reward distribution but is therefore conservative; a Bayesian method gets a head start when the prior is sensible (e.g.\ CTRs are mostly small) and the posterior directly
+tells you ``how sure am I about each arm''. The price is that the guarantee is only as good as the modelling assumptions.
+\end{intuition}
+
+% =====================================================================
+\section{Gaussian Bayesian Bandits Example \slides{39--40}}
+
+\subsection{Setting \slides{39}}
+
+Assume each reward distribution is Gaussian, $\nu_i=\Norm(\mu(i),\sigma^2(i))$. After some pulls the learner holds, for each arm, a belief (a Gaussian) about that arm's quality: the centre is the best guess
+$\mu(i)$ and the width reflects remaining uncertainty.
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}
+\begin{axis}[width=0.85\linewidth,height=6cm,xmin=-4,xmax=4,ymin=-0.55,ymax=1.0,xlabel={reward $Q$},ylabel={$p(Q)$},
+  ytick={0,0.2,0.4,0.6,0.8},no markers,legend style={font=\scriptsize,at={(0.02,0.98)},anchor=north west},axis lines=left,clip=false]
+ \addplot[blue!70!black,thick] coordinates {(-3,0.04) (-2,0.15) (-1.2,0.42) (-0.4,0.15) (0.4,0.04)};
+ \addplot[red!75!black,thick] coordinates {(-2,0.01) (-1,0.20) (0,0.80) (1,0.20) (2,0.01)};
+ \addplot[green!50!black,thick] coordinates {(-0.3,0.02) (0.1,0.45) (0.45,0.90) (0.8,0.45) (1.1,0.02)};
+ \addlegendentry{$Q(a_1)$: wide}
+ \addlegendentry{$Q(a_2)$: medium}
+ \addlegendentry{$Q(a_3)$: narrow}
+ \draw[dashed,blue!70!black] (axis cs:-1.2,0) -- (axis cs:-1.2,0.42);
+ \draw[dashed,red!75!black] (axis cs:0,0) -- (axis cs:0,0.42);
+ \draw[dashed,green!50!black] (axis cs:0.45,0) -- (axis cs:0.45,0.9);
+ \draw[<->,blue!70!black,thick] (axis cs:-2.6,-0.12) -- (axis cs:0.2,-0.12) node[right,font=\scriptsize,xshift=2pt] {$c\sigma(a_1)$};
+ \draw[<->,red!75!black,thick]  (axis cs:-0.9,-0.26) -- (axis cs:0.9,-0.26) node[right,font=\scriptsize,xshift=2pt] {$c\sigma(a_2)$};
+ \draw[<->,green!50!black,thick](axis cs:0.0,-0.40) -- (axis cs:0.9,-0.40) node[right,font=\scriptsize,xshift=2pt] {$c\sigma(a_3)$};
+\end{axis}
+\end{tikzpicture}
+\caption{Beliefs over the quality of three arms (slide 39 redrawn; dashed lines mark the means $\mu(a_i)$; the double arrows are confidence widths $\pm c\sigma$ around each mean). Arm~1 is very uncertain, arm~3 is well known.}
+\end{figure}
+
+\subsection{Posterior update \slides{40}}
+
+The prior is often $\Norm(0,1)$. The posterior after history $h_t$ is proportional to the prior times the product of the likelihoods of all the rewards observed when this arm was selected (slide 40: ``product over all time-steps $t$ that select action $i$''). For a Gaussian prior and Gaussian noise this has a closed form.
+
+\begin{proposition}[Gaussian conjugacy]\label{prop:gauss}
+Let the unknown mean of an arm have prior $\mu\sim\Norm(m_0,s_0^2)$, and let $r_1,\dots,r_n$ be i.i.d.\ $\Norm(\mu,\sigma^2)$ with $\sigma^2$ known. Then the posterior is $\Norm(m_n,s_n^2)$ with
+\[
+ \frac1{s_n^2}=\frac1{s_0^2}+\frac n{\sigma^2},\qquad m_n=s_n^2\Bigl(\frac{m_0}{s_0^2}+\frac1{\sigma^2}\sum_{i=1}^nr_i\Bigr).
+\]
+\end{proposition}
+\begin{proof}
+By Bayes' rule (Theorem~\ref{thm:bayes}) the posterior density is proportional to prior times likelihood,
+\[
+ p(\mu\mid r_{1:n})\propto\exp\Bigl(-\frac{(\mu-m_0)^2}{2s_0^2}\Bigr)\prod_{i=1}^n\exp\Bigl(-\frac{(r_i-\mu)^2}{2\sigma^2}\Bigr).
+\]
+The exponent is a quadratic in $\mu$; collecting terms,
+\[
+ -\frac12\Bigl[\mu^2\Bigl(\frac1{s_0^2}+\frac n{\sigma^2}\Bigr)-2\mu\Bigl(\frac{m_0}{s_0^2}+\frac{\sum_ir_i}{\sigma^2}\Bigr)\Bigr]+\text{const},
+\]
+which is $-\frac1{2s_n^2}(\mu-m_n)^2+\text{const}$ for exactly the $s_n^2$ and $m_n$ of the statement. A density proportional to a Gaussian kernel is that Gaussian.
+\end{proof}
+
+\begin{corollary}[One-step update]\label{cor:gauss-step}
+If arm $i$ has the posterior $\Norm(\mu_{t-1}(i),\sigma_{t-1}^2(i))$ and is pulled, yielding $r_t$, its new posterior is $\Norm(\mu_t(i),\sigma_t^2(i))$ with
+\[
+ \frac1{\sigma_t^2(i)}=\frac1{\sigma_{t-1}^2(i)}+\frac1{\sigma^2},\qquad
+ \mu_t(i)=\sigma_t^2(i)\Bigl(\frac{\mu_{t-1}(i)}{\sigma_{t-1}^2(i)}+\frac{r_t}{\sigma^2}\Bigr);
+\]
+the posteriors of the other arms are unchanged.
+\end{corollary}
+\begin{proof}
+Posterior updating can be done one observation at a time: the old posterior plays the role of the prior and Proposition~\ref{prop:gauss} is applied with $n=1$. Arms not pulled provide no data about their own mean, so their posteriors stay the same.
+\end{proof}
+
+This is the compact update shown on slide 40, $p(\mu_t(i),\sigma_t^2(i)\mid r_t)\propto p(\mu,\sigma^2)\,\Norm(r_t\mid\cdot)$: the slide writes the Gaussian likelihood of the new reward with the current posterior parameters as shorthand; the closed form above is what is actually computed.
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}
+\begin{axis}[width=0.85\linewidth,height=5.6cm,xmin=-3.5,xmax=3.5,ymin=0,ymax=1.75,xlabel={arm mean $\mu$},ylabel={density},
+ no markers,legend style={font=\scriptsize,at={(0.02,0.98)},anchor=north west}]
+ \addplot[black!60,thick,dashed] coordinates {(-3,0.004) (-2,0.054) (-1,0.242) (0,0.399) (1,0.242) (2,0.054) (3,0.004)};
+ \addplot[blue!50,thick] coordinates {(-2,0.006) (-1,0.16) (0,0.56) (1,0.16) (2,0.006)};
+ \addplot[blue!70!black,thick] coordinates {(-1,0.03) (0,0.84) (0.8,0.42) (1.6,0.03)};
+ \addplot[red!75!black,very thick] coordinates {(0.1,0.01) (0.5,0.85) (0.8,1.65) (1.1,0.85) (1.5,0.01)};
+ \draw[dotted,thick,green!50!black] (axis cs:0.8,0) -- (axis cs:0.8,1.75) node[below right,font=\scriptsize] {true mean $0.8$};
+ \addlegendentry{prior $\Norm(0,1)$}
+ \addlegendentry{$n=1$}
+ \addlegendentry{$n=4$}
+ \addlegendentry{$n=16$}
+\end{axis}
+\end{tikzpicture}
+\caption{Toy simulation of Proposition~\ref{prop:gauss} ($\sigma=1$, true mean $0.8$, seeded data): the posterior narrows like $1/\sqrt n$ (standard deviations $1,\ 0.71,\ 0.45,\ 0.24$ for $n=0,1,4,16$) and its centre drifts from the prior mean $0$ towards the truth
+(posterior means $0.00$, $0.25$, $0.66$ for $n=1,4,16$ in this run).}
+\end{figure}
+
+\begin{intuition}
+Precisions (inverse variances) \emph{add}: prior precision $1/s_0^2$ plus $1/\sigma^2$ per observation, and the posterior mean is a precision-weighted average of the prior mean and the data.
+Worked example: prior $\Norm(0,1)$, $\sigma^2=1$, and $n=4$ observations summing to $3$. Then $s_4^2=1/(1+4)=0.2$ and $m_4=0.2\cdot(0+3)=0.6$: the sample mean $0.75$ is pulled slightly toward the prior mean~$0$ (like having one extra ``virtual'' observation equal to $0$).
+The more data an arm has, the less the prior matters, and a rarely tried arm keeps a wide posterior, which is exactly what the exploration rules below exploit.
+\end{intuition}
+
+% =====================================================================
+\section{Gaussian Bayesian Bandits: UCB \slides{41--43}}
+
+Since we are modelling a distribution, we already have a measure of confidence. What is confidence for a Gaussian? Its \emph{standard deviation}. The slide proposes a UCB rule built from it:
+
+\begin{algorithm}[Bayesian UCB (Gaussian)]\label{alg:bucb}
+At round $t$ play
+\[
+ a_t=\argmax_{i\in[K]}\ \Bigl(\mu_t(i)+\frac{c\,\sigma_t(i)}{\sqrt{N_t(i)}}\Bigr),
+\]
+where $\mu_t(i)$ is the posterior mean, $N_t(i)$ the number of pulls of arm $i$, $\sigma_t(i)$ the Gaussian's standard deviation parameter and $c>0$ a constant that sets how optimistic we are.
+\end{algorithm}
+
+The slide's wording ``select the action with highest standard deviation'' is shorthand: the score is the mean plus $c$ times the uncertainty of the mean, $\sigma_t(i)/\sqrt{N_t(i)}$, which is the standard error of the arm's mean
+(with a weak prior it coincides with the posterior standard deviation from Proposition~\ref{prop:gauss}).
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[font=\small,>=Stealth,y=3.2cm]
+  \draw[->] (-0.6,0) -- (-0.6,1.35) node[above] {score};
+  \foreach \x/\mmu/\bon/\nn/\lab in {1/0.55/0.40/25/{$N=25$},3/0.10/1.00/4/{$N=4$},5/0.70/0.20/100/{$N=100$}}{
+    \fill[blue!35] (\x-0.5,0) rectangle (\x+0.5,\mmu);
+    \fill[orange!55] (\x-0.5,\mmu) rectangle (\x+0.5,\mmu+\bon);
+    \node[below] at (\x,0) {arm \the\numexpr(\x+1)/2\relax};
+    \node[below=11pt,font=\scriptsize] at (\x,0) {\lab};
+    \pgfmathparse{\mmu+\bon}\let\score\pgfmathresult
+    \node[above,font=\scriptsize] at (\x,\mmu+\bon) {$\mathrm{score}=\pgfmathprintnumber[fixed,precision=2]{\score}$};
+  }
+  \draw[red!70!black,thick] (3-0.62,1.10) rectangle (3+0.62,1.26);
+  \node[blue!50!black,font=\scriptsize] at (1,0.27) {$\mu_t$};  \node[orange!60!black,font=\scriptsize] at (1,0.75) {bonus};
+  \node[red!70!black,font=\scriptsize,right] at (3.7,1.18) {highest score $\Rightarrow$ play arm 2};
+\end{tikzpicture}
+\caption{Snapshot of Algorithm~\ref{alg:bucb} with $c=2$, $\sigma=1$ (illustrative numbers). Blue: posterior mean; orange: bonus $c\sigma/\sqrt{N}$. Arm~2 has the \emph{lowest} mean but is almost unexplored, so its bonus ($1.0$) lifts it to the top.}
+\end{figure}
+
+\begin{intuition}
+Compare with Algorithm~\ref{alg:ucb}: the distribution-free width $\sqrt{\ln(KT/\delta)/N}$ is replaced by $c\sigma/\sqrt N$, with $c$ playing the role of $\sqrt{\ln(KT/\delta)}$. Under a Gaussian belief, $c=2$ means that the true mean lies below the score with probability
+$\Phi(2)\approx97.7\%$. In the snapshot (means $0.55,0.10,0.70$; counts $25,4,100$; $c=2$) the scores are $0.95,\ 1.10,\ 0.90$: the well-explored best-looking arm is passed over in favour of the least-explored one, as optimism demands.
+Slide 43 shows an animation of the rule: as an arm is pulled its bonus shrinks, so the scores converge towards the true means and the choice settles on the best arm.
+\end{intuition}
+% =====================================================================
+\section{Gaussian Bayesian Bandits: Thompson Sampling \slides{44--48}}
+
+\subsection{Probability matching \slides{44--45}}
+
+Thompson sampling (TS) is a way to do \emph{probability matching}: it selects an action with probability equal (or proportional) to the probability that the action is optimal given what we know, i.e.\ its \emph{posterior probability of being optimal}.
+It is optimistic in the face of uncertainty, because uncertain actions have a higher probability of attaining the maximum, and it \emph{uses sampling to avoid the complications of actual probability matching}.
+
+\emph{Slide example.} You are choosing between two ads. Each step you draw a plausible click-through rate for A and for B from your current beliefs, show the ad with the higher draw, observe the result and update your beliefs; the truly better ad is picked more and more over time.
+
+\begin{algorithm}[Thompson sampling (posterior sampling)]\label{alg:ts}
+For $t=0,1,\dots,T-1$:
+\begin{enumerate}
+ \item for each arm $a$, draw $\tilde\mu_t(a)$ \emph{independently} from the current posterior of $\mu(a)$;
+ \item play $A_t\in\argmax_a\tilde\mu_t(a)$;
+ \item observe $r_t$ and update the posterior of arm $A_t$ only.
+\end{enumerate}
+In the contextual case the posterior is over the parameters of the \emph{reward model}: step~1 draws one model, and step~2 acts greedily with respect to that draw.
+\end{algorithm}
+
+\begin{proposition}[Thompson sampling is probability matching]\label{prop:pm}
+Assume the arms' means are independent under the posterior given the history $h_t$. Then for every arm $a$ (ties broken by the same rule on both sides)
+\[
+ \Prob(A_t=a\mid h_t)=\Prob\bigl(a\in\argmax_{a'}\mu(a')\bigm|h_t\bigr),
+\]
+i.e.\ the algorithm plays each arm exactly as often as it believes that arm is optimal.
+\end{proposition}
+\begin{proof}
+By independence, drawing $\tilde\mu_t(a)$ from each arm's marginal posterior independently is a draw of the whole vector $\tilde\mu_t$ from the joint posterior of $(\mu(1),\dots,\mu(K))$ given $h_t$.
+The event $\{A_t=a\}$ is the event $\{a\in\argmax_{a'}\tilde\mu_t(a')\}$, whose probability under the joint posterior is by definition the posterior probability that $a$ is an optimal arm.
+\end{proof}
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}
+\begin{axis}[width=0.85\linewidth,height=5.4cm,xmin=-0.4,xmax=1.3,ymin=0,ymax=4.4,xlabel={plausible value of the arm mean},ylabel={posterior density},
+  no markers,legend style={font=\scriptsize,at={(0.98,0.97)},anchor=north east}]
+ \addplot[blue!70!black,very thick] coordinates {(-0.4,0.00) (0.2,1.0) (0.5,3.99) (0.8,1.0) (1.3,0.00)};
+ \addplot[orange!90!black,very thick] coordinates {(-0.4,0.00) (-0.2,0.45) (0.1,1.05) (0.4,1.33) (0.7,1.05) (1.0,0.45) (1.3,0.00)};
+ \addlegendentry{arm A: $\Norm(0.50,0.10^2)$}
+ \addlegendentry{arm B: $\Norm(0.40,0.30^2)$}
+ \draw[dashed,blue!70!black] (axis cs:0.5,0) -- (axis cs:0.5,3.99);
+ \draw[dashed,orange!90!black] (axis cs:0.4,0) -- (axis cs:0.4,1.33);
+\end{axis}
+\end{tikzpicture}
+\caption{Two posteriors with independent arms. A has the higher mean but B is much more uncertain; B's posterior probability of being the better arm is $\Phi\bigl(-0.1/\sqrt{0.1^2+0.3^2}\bigr)\approx0.376$, so TS plays B about 37.6\% of the time.}
+\end{figure}
+
+\begin{intuition}
+Why ``sample, then argmax'' (slide 45) is enough: you never compute $\Prob(\text{arm }a\text{ is best})$ explicitly; you just \emph{simulate one possible world} consistent with your beliefs and act optimally in it. Over many rounds the frequency with which each arm wins its
+simulated world is precisely its probability of being optimal. In the figure, for independent Gaussians $\Prob(\mu_B>\mu_A)=\Phi\bigl((m_B-m_A)/\sqrt{s_A^2+s_B^2}\bigr)=\Phi(-0.316)\approx0.376$ (a Monte Carlo check with $10^6$ pairs of draws gives $0.375$). The less-known arm keeps getting tried
+\emph{in proportion to how plausibly it might be best}; once its posterior narrows below the other arm's, that probability collapses to zero and exploration stops by itself.
+\end{intuition}
+
+\subsection{The Gaussian algorithm \slides{46--47}}
+
+\begin{algorithm}[Thompson sampling, Gaussian arms]\label{alg:tsg}
+For $t=0,\dots,T$:
+\begin{enumerate}
+ \item for each arm $i=1,\dots,K$ sample a value $\tilde\mu_t(i)$ \emph{independently} from $\Norm\bigl(\mu_{t-1}(i),\sigma^2_{t-1}(i)\bigr)$ (the slides denote this sampled value by $\hat{\mathbf r}_i$; it is \emph{not} the IPS vector of Section~5);
+ \item pull the arm $I_t=\argmax_{i\in[K]}\tilde\mu_t(i)$;
+ \item observe the reward $r_t$;
+ \item update the posterior of the pulled arm via Corollary~\ref{cor:gauss-step}.
+\end{enumerate}
+\end{algorithm}
+
+Slide 47 adds two remarks. First, the sampled value is an estimate of the \emph{reward}; in a general MDP it can be replaced by the $Q$-function, i.e.\ we estimate a \emph{distribution over $Q$} and sample from it.
+Second, ``this can be done with different distributions as well'' (see Section~\ref{sec:beta}).
+
+\begin{intuition}
+Compared with Bayesian UCB, nothing is added to the mean: uncertainty enters \emph{through the randomness of the sample}. A wide posterior occasionally produces a very high draw and so gets tried; a narrow posterior almost always draws close to its mean. This ``randomised optimism''
+needs no tuning constant $c$, only a sensible prior.
+\end{intuition}
+
+\subsection{Simulation \slides{48}}
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[group style={group size=2 by 1,horizontal sep=1.6cm},width=0.47\linewidth,height=5.2cm,no markers,title style={font=\small}]
+ \nextgroupplot[title={posteriors after $t=80$},xlabel={arm mean $\mu$},ylabel={density},xmin=-1.5,xmax=2.2,ymin=0,
+   legend style={font=\scriptsize,at={(0.02,0.98)},anchor=north west}]
+  \addplot[orange!90!black,thick] coordinates {(-1.0,0.02) (0.0,0.55) (0.3,1.45) (0.6,0.55) (1.3,0.02)};
+  \addplot[blue!70!black,thick] coordinates {(-0.1,0.02) (0.5,0.65) (0.8,3.0) (1.1,0.65) (1.7,0.02)};
+  \draw[dashed,orange!90!black] (axis cs:0.3,0) -- (axis cs:0.3,1.6);
+  \draw[dashed,blue!70!black] (axis cs:0.8,0) -- (axis cs:0.8,3.2);
+  \addlegendentry{arm 1}
+ \addlegendentry{arm 2}
+ \nextgroupplot[title={chosen arm over time},xlabel={$t$},xmin=1,xmax=80,ymin=0.5,ymax=2.5,ytick={1,2},yticklabels={arm 1,arm 2}]
+  \addplot[only marks,mark=*,mark size=1.4pt,orange!90!black] coordinates {(1,1) (2,2) (4,1) (7,1) (12,1) (18,1) (25,1) (40,1) (60,1)};
+  \addplot[only marks,mark=*,mark size=1.4pt,blue!70!black] coordinates {(3,2) (5,2) (8,2) (10,2) (15,2) (20,2) (30,2) (50,2) (80,2)};
+\end{groupplot}
+\end{tikzpicture}
+\caption{Toy simulation of Algorithm~\ref{alg:tsg} (seeded): two Gaussian arms with true means $0.3$ and $0.8$ (dashed), noise $\sigma=1$, prior $\Norm(0,1)$, $T=80$. Arm~1 is tried 13 times and then largely abandoned; arm~2 is played in 67 rounds.
+Final posteriors: arm~1 $\Norm(0.22,0.27^2)$ (still wide, as it was rarely sampled), arm~2 $\Norm(0.69,0.12^2)$ (narrow).}
+\end{figure}
+
+% =====================================================================
+\section{Bayesian Bandits: Thompson Sampling \slides{49}}\label{sec:beta}
+
+Slide 49 repeats the algorithm with \emph{Beta posteriors} for an A/B ad test (click-through rates in $[0,1]$). Each step: sample $\tilde\theta_A,\tilde\theta_B$ from the Beta posteriors, pick the argmax, observe a click, and update that arm only.
+
+\begin{proposition}[Beta--Bernoulli conjugacy]\label{prop:beta}
+If $\mu\sim\mathrm{Beta}(\alpha,\beta)$ and $r\sim\mathrm{Bernoulli}(\mu)$, then $\mu\mid r\sim\mathrm{Beta}(\alpha+r,\ \beta+1-r)$. After $k$ successes in $n$ trials from the uniform prior $\mathrm{Beta}(1,1)$, the posterior is $\mathrm{Beta}(1+k,\,1+n-k)$, with mean $\frac{k+1}{n+2}$ and variance $\frac{\alpha\beta}{(\alpha+\beta)^2(\alpha+\beta+1)}$ (with $\alpha=1+k$, $\beta=1+n-k$).
+\end{proposition}
+\begin{proof}
+The Beta density is proportional to $\mu^{\alpha-1}(1-\mu)^{\beta-1}$ and the Bernoulli likelihood is $\mu^r(1-\mu)^{1-r}$. Their product is proportional to $\mu^{\alpha+r-1}(1-\mu)^{\beta+(1-r)-1}$, the kernel of $\mathrm{Beta}(\alpha+r,\beta+1-r)$.
+Iterating $n$ times adds the successes to $\alpha$ and the failures to $\beta$; the moments are those of the Beta distribution.
+\end{proof}
+
+\begin{algorithm}[Thompson sampling, Bernoulli rewards]
+Keep $(\alpha_i,\beta_i)=(1,1)$ for each arm $i$. At each round: draw $\tilde\theta_i\sim\mathrm{Beta}(\alpha_i,\beta_i)$ for all $i$, play $I_t=\argmax_i\tilde\theta_i$, observe the click $c_t\in\{0,1\}$, and set $\alpha_{I_t}\leftarrow\alpha_{I_t}+c_t$, $\beta_{I_t}\leftarrow\beta_{I_t}+1-c_t$.
+\end{algorithm}
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}
+\begin{axis}[width=0.85\linewidth,height=5.4cm,xmin=0,xmax=1,ymin=0,xlabel={click-through rate $\theta$},ylabel={posterior density},no markers,
+  legend style={font=\scriptsize,at={(0.98,0.97)},anchor=north east}]
+ \addplot[blue!70!black,very thick] coordinates {(0,0) (0.1,0.45) (0.3,1.4) (0.5,2.4) (0.6,2.65) (0.8,1.2) (1,0)};
+ \addplot[orange!90!black,very thick] coordinates {(0,0) (0.1,1.0) (0.3,2.0) (0.5,1.35) (0.7,0.55) (0.9,0.1) (1,0)};
+ \addlegendentry{ad A: $\mathrm{Beta}(7,5)$ (6 clicks in 10)}
+ \addlegendentry{ad B: $\mathrm{Beta}(2,3)$ (1 click in 3)}
+\end{axis}
+\end{tikzpicture}
+\caption{Beta posteriors for an A/B test from the uniform prior (illustrative counts). Ad B has little data, so its posterior is broad.}
+\end{figure}
+
+\begin{intuition}
+Beta--Bernoulli is the Bernoulli analogue of Proposition~\ref{prop:gauss}: ``pseudo-counts'' of successes and failures. For ad A ($k=6$, $n=10$): mean $7/12\approx0.583$, variance $\approx0.0187$. For ad B ($k=1$, $n=3$): mean $2/5=0.4$, variance $0.04$.
+The probability that a draw for A beats a draw for B is $\approx0.77$ (Monte Carlo, $10^6$ draws), so Thompson sampling would show A about 77\% of the time and still B about 23\% of the time, because B's few observations leave
+real doubt. Each click or non-click then moves the corresponding posterior and the shares drift towards the truly better ad. This is the ``different distributions'' remark of slides 47 and 49: the algorithm only needs a posterior one can \emph{sample} from.
+\end{intuition}
+
+% =====================================================================
+\section{Summary}
+
+\begin{table}[ht]
+\centering\small
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{>{\raggedright\arraybackslash}p{2.2cm}>{\raggedright\arraybackslash}p{1.35cm}>{\raggedright\arraybackslash}p{3.9cm}>{\raggedright\arraybackslash}p{2.4cm}>{\raggedright\arraybackslash}p{4.05cm}}
+\toprule
+\textbf{Method} & \textbf{Setting} & \textbf{How it explores} & \textbf{Assumes} & \textbf{Result in this lecture}\\\midrule
+Greedy & MAB & try each arm once, commit to the best sample & nothing & linear regret (about $0.08T$ in the Bernoulli example)\\
+Explore-then-commit & MAB & $N$ pulls per arm, then commit & rewards in $[0,1]$; needs $T,K,\delta$ to set $N$ & $O(T^{2/3}K^{1/3}\ln^{1/3}(K/\delta))$ (Thm.~\ref{thm:ec-mab})\\
+UCB & MAB & optimism: mean $+\sqrt{\ln(KT/\delta)/N_t}$ & rewards in $[0,1]$ & $\widetilde O(\sqrt{KT})$, optimal up to logs (Thm.~\ref{thm:ucb})\\
+Explore-then-commit & CB & uniform actions $+$ IPS for $N$ rounds, then $\hat\pi$ & finite $\Pi$ & $O\bigl(T^{2/3}K^{2/3}\ln^{1/3}(|\Pi|/\delta)\bigr)$ as proved (Thm.~\ref{thm:cec}); slide: $K^{1/3}$\\
+$\epsilon$-greedy & CB & mixture $(1-\epsilon_t)\delta_{\pi^t}+\epsilon_t\Unif$ $+$ IPS, $\epsilon_t\downarrow0$ & finite/given $\Pi$ & no bound stated (simulation only)\\
+Bayesian UCB & MAB (Gaussian) & posterior mean $+\,c\,\sigma_t/\sqrt{N_t}$ & Gaussian prior and noise & none stated (rule and snapshot)\\
+Thompson sampling & MAB / CB & sample from posterior, act greedily on the sample & sampleable posterior (Gaussian, Beta, \dots) & plays arm $a$ with prob.\ $\Prob(a\text{ optimal})$ (Prop.~\ref{prop:pm}); no regret bound stated\\\bottomrule
+\end{tabular}
+\caption{Comparison of the methods covered. ``CB'' = contextual bandit, ``MAB'' = multi-armed bandit. ``None stated'' means neither the slides nor the companion note give a bound.}
+\end{table}
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}
+\begin{axis}[width=0.88\linewidth,height=6.4cm,xlabel={round $t$},ylabel={mean cumulative regret},xmin=0,xmax=3000,ymin=0,no markers,
+  legend style={font=\scriptsize,at={(0.03,0.97)},anchor=north west},grid=both,grid style={black!10}]
+ \addplot[red!75!black,thick] coordinates {(0,0) (500,18) (1000,30) (1500,41) (2000,51) (2500,57) (3000,61)};
+ \addplot[orange!90!black,thick,dashed] coordinates {(0,0) (500,18) (1000,30) (1500,39) (2000,47) (2500,53) (3000,56)};
+ \addplot[green!45!black,thick,dash dot] coordinates {(0,0) (500,22) (1000,27) (1500,29) (2000,30) (2500,30) (3000,30)};
+ \addplot[blue!70!black,very thick] coordinates {(0,0) (500,8) (1000,12) (1500,15) (2000,16) (2500,17) (3000,17)};
+ \addlegendentry{UCB (slide bonus, $\delta=0.05$)}
+ \addlegendentry{$\epsilon$-greedy ($\epsilon_t=t^{-1/3}$)}
+ \addlegendentry{explore-then-commit ($N=60$ per arm)}
+ \addlegendentry{Thompson sampling (Beta)}
+\end{axis}
+\end{tikzpicture}
+\caption{Toy simulation (qualitative): Bernoulli bandit with $K=3$ arms of means $0.7,0.5,0.4$, $T=3000$, regret averaged over 300 seeded runs. At $T=3000$ the average regrets are about $17$ (Thompson), $30$ (explore-then-commit), $56$ ($\epsilon$-greedy) and $61$ (UCB).
+Constants matter in a short horizon: UCB with the conservative slide bonus $\sqrt{\ln(KT/\delta)/N}$ explores a lot, and explore-then-commit works well here only because $N=60$ was hand-picked (the theory needs the gaps, or $T,K,\delta$ and a bound, to choose it).
+Asymptotically the ordering of \emph{rates} (linear $\gg T^{2/3}\gg\sqrt T$) is what the theorems describe.}
+\end{figure}
+
+\subsection*{Key take-aways}
+\begin{itemize}
+ \item \textbf{Exploration is unavoidable, and regret measures its price.} Greedy suffers linear regret; explore-then-commit balances exploration against commitment to get $T^{2/3}$; optimism (UCB) gets the optimal $\sqrt T$ rate up to logs, with no schedule to tune.
+ \item \textbf{Context changes the object being learned, not the logic.} A contextual bandit asks for a \emph{policy}, with i.i.d.\ contexts and bandit feedback; regret is measured against the best policy in $\Pi$, and the cost of a rich class is only $\ln|\Pi|$ (inside a cube root).
+ \item \textbf{IPS makes learning from partial feedback possible.} Dividing by the known propensity gives an unbiased estimate of every action's reward (Lemma~\ref{lem:ips}), at the price of variance up to $K$ (uniform exploration) or $K/\epsilon_t$ ($\epsilon$-greedy), which is why exploration probabilities must stay positive.
+ \item \textbf{Explore-then-commit separates the phases, $\epsilon$-greedy interleaves them.} The first is easy to analyse (Theorem~\ref{thm:cec}); the second keeps learning and adapting but needs a decay schedule for $\epsilon_t$.
+ \item \textbf{Bayesian bandits turn uncertainty into a distribution you can use.} Conjugate updates (Gaussian, Beta--Bernoulli) are one-line formulas; Bayesian UCB adds a multiple of the posterior width, while Thompson sampling samples from the posterior and thereby plays each arm with its probability of being optimal (Proposition~\ref{prop:pm}).
+\end{itemize}
+
+% =====================================================================
+\appendix
+\section{Supplementary material (in the companion note, not on the slides)}\label{app:supp}
+
+The following result is in the companion note but has no corresponding slide; it supplies the technical ingredient (range of the IPS terms) used in the proof of Theorem~\ref{thm:cec}.
+
+\begin{lemma}[What unbiasedness costs]\label{lem:range}
+Under uniform exploration, $0\le\rh_t[a]\le K$ and $\Var\bigl(\rh_t[a]\mid x_t\bigr)\le K$.
+\end{lemma}
+\begin{proof}
+The estimator is $Kr_t\le K$ on one action and $0$ elsewhere, which gives the range. For the variance,
+$\E[\rh_t[a]^2\mid x_t]=\frac1K\,K^2\,\E[r_t^2\mid x_t,a]\le K$, since rewards lie in $[0,1]$, and the variance is at most the second moment.
+\end{proof}
+
+\begin{intuition}
+Unbiasedness is bought with noise: each observation is $0$ with probability $1-1/K$ and $Kr_t$ with probability $1/K$. With $K=10$ actions and reward $0.5$, a single IPS observation is either $0$ or $5$ although the target is $0.5$; its variance is $10\cdot0.25-0.25=2.25$, versus at most $0.25$ for a $[0,1]$-valued observation.
+The \emph{range} bound $K$ is what Hoeffding's inequality uses in Theorem~\ref{thm:cec}; the \emph{variance} bound $K$ is what Bernstein's inequality would use to sharpen the dependence on $K$ (see the remark after that theorem).
+\end{intuition}
+
+\section{Notation map and slide/note discrepancies}\label{app:notes}
+
+\begin{table}[ht]
+\centering\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{lll}\toprule
+\textbf{Concept} & \textbf{Slides} & \textbf{Companion note / these notes}\\\midrule
+context, context set & $x_t$, $\mathcal X$ & $z_t$, $\mathcal Z$ $\;/\;$ $x_t$, $\calX$\\
+context distribution & $\mu$ & $\rho$\\
+action at round $t$ & $a_t$ (CB), $I_t$ (MAB) & $A_t$ $\;/\;$ $a_t$, $I_t$\\
+policy at round $t$ & $\pi^t$ & $\pi_t$\\
+regret & $\mathrm{Regret}_T$ & $\mathrm{Reg}(T)$\\
+IPS vector & $\hat{\mathbf r}_t[a]$ & $\hat r_t[a]$ $\;/\;$ $\rh_t[a]$\\\bottomrule
+\end{tabular}
+\end{table}
+
+Small inconsistencies noticed while merging the two sources, and how these notes treat them:
+\begin{itemize}
+ \item \textbf{Slide 8:} ``Set $N=T/K$'' would use all $T$ rounds for exploration; read it as a placeholder with $NK\ll T$. The optimised $N^\star$ is on slide 12 and in Theorem~\ref{thm:ec-mab}.
+ \item \textbf{Slide 12:} ``approaches 0 as $T$ goes to infinity'' refers to the \emph{average} regret $\Reg_T/T\sim T^{-1/3}$; the regret itself grows (sub-linearly).
+ \item \textbf{Slides 11--12 and 14:} confidence widths are written with $\ln(K/\delta)$ or $\ln(KT/\delta)$, hiding the constant $2$ and Hoeffding's factor $\tfrac12$ inside $O(\cdot)$; the proofs here keep $\ln(2K/\delta)$ and $\ln(2KT/\delta)$.
+ \item \textbf{Slide 31 vs.\ Theorem~\ref{thm:cec}:} slide $K^{1/3}$, proved bound $K^{2/3}$; see the remark after the theorem.
+ \item \textbf{Slide 42:} ``highest standard deviation'' should read ``highest mean plus $c$ standard errors'', as the displayed formula says.
+ \item \textbf{Slides 46--47:} the hat-bold-$r$ symbol there denotes a \emph{sample from the posterior}, unrelated to the IPS vector of slides 27--35.
+ \item \textbf{Slide 40:} the recursive update is written with the likelihood evaluated at the current posterior parameters; the closed form is Corollary~\ref{cor:gauss-step}.
+\end{itemize}
+
+\newpage
+
+% ======================================================================
+% Lecture 2 -- Part 2
+% ======================================================================
+\part{Lecture 2 -- Part 2}
+
+\begin{center}\small
+Structure follows the slide deck (slides 1--55); formal statements and proofs are merged in from the
+companion PDF at the point where the slides introduce the topic. Material that appears only in the PDF is
+collected in the Appendix.
+\end{center}
+
+\bigskip
+
+%=====================================================================
+\section{Recap \slr{2--11}}
+%=====================================================================
+The lecture opens by recalling the bandit material of the previous lectures (slide 2 opens the recap, slide 11 closes it). The point of the recap is to set up the jump from \emph{one-step} decision making to \emph{sequential} decision making.
+
+\subsection{From Multi-Armed to Contextual Bandits \slr{3}}
+A multi-armed bandit (MAB) is stateless: the agent picks an action and receives a reward. A \emph{contextual bandit} (CB) adds back some context (a state): before acting, the agent sees a context $x_t$, and the reward depends on both the context and the arm.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[>=Stealth,
+  box/.style={draw,fill=blue!30,rounded corners=1pt,minimum width=1.9cm,minimum height=0.7cm,font=\small}]
+  \node[box] (a1) at (0,1.5) {Action};
+  \node[box] (r1) at (3,1.5) {Reward};
+  \draw[->] (a1)--(r1);
+  \node[anchor=west,align=left,font=\small] at ([xshift=3mm]r1.east) {\textbf{Multi-armed bandit}\\(stateless)};
+  \node[box] (s2) at (-3,0) {State};
+  \node[box] (a2) at (0,0) {Action};
+  \node[box] (r2) at (3,0) {Reward};
+  \draw[->] (s2)--(a2); \draw[->] (a2)--(r2);
+  \node[anchor=west,align=left,font=\small] at ([xshift=3mm]r2.east) {\textbf{Contextual bandit}};
+  \draw[->,dashed] (r2.south) to[out=-90,in=-90,looseness=0.5]
+     node[below,font=\scriptsize]{next round: new i.i.d.\ context} (s2.south);
+\end{tikzpicture}
+\caption{MAB versus contextual bandit (redrawn from slide 3).}
+\end{figure}
+
+\begin{intuition}
+Think of a MAB as a single slot machine room with no information about who walks in; a CB is the same room where each customer has a profile $x_t$ and the best machine depends on the profile. The crucial point for what follows: in a CB the context is drawn i.i.d., so \emph{my action does not change the next context}. MDPs remove exactly this restriction.
+\end{intuition}
+
+\subsection{Contextual Bandits: Interaction \slr{4}}
+For $t=0,\dots,T-1$:
+\begin{enumerate}[nosep]
+  \item a new i.i.d.\ context $x_t\in\mathcal X$ appears;
+  \item select an action $a_t\in\cA$ based on historical information and the context;
+  \item observe the reward $r(x_t,a_t)$ (context- and arm-dependent).
+\end{enumerate}
+For simplicity the rewards are assumed deterministic, ``as the context is the challenge here''.
+
+\subsection{Contextual Bandits: Regret \slr{5}}
+The optimal policy is $\pi^\star=\argmax_{\pi\in\Pi}\E_{x\sim\mu}[r(x,\pi(x))]$. At every iteration $a_t=\pi^t(x_t)$ is chosen, and the regret compares the total expected reward of always using $\pi^\star$ with that of our learned sequence of policies:
+\[
+  \mathrm{Regret}_T \;=\; T\,\E_{x\sim\mu}\!\left[r(x,\pi^\star(x))\right]\;-\;\sum_{t=0}^{T-1}\E_{x\sim\mu}\!\left[r(x,\pi^t(x))\right].
+\]
+Note that the policies $\pi^t$ are different at every iteration $t$.
+
+\begin{intuition}
+Regret is ``how much reward I left on the table by not knowing $\pi^\star$ from day one''. If $\mathrm{Regret}_T$ grows sublinearly in $T$, the \emph{average} regret per round goes to $0$: eventually the learner behaves like the optimal policy.
+\end{intuition}
+
+\subsection{Explore \& Commit Algorithm \slr{6}}
+\begin{algorithm}[Explore \& Commit for contextual bandits]
+\begin{enumerate}[nosep]
+  \item For $t=0,\dots,N-1$ (\emph{explore}): observe $x_t\sim\mu$; sample $a_t\sim\mathrm{Unif}(\cA)$; observe $r_t=r(x_t,a_t)$; build, for $x_t$, an unbiased estimate $\hat r_t$ of the reward vector, with $\E_{a_t\sim\mathrm{Unif}(\cA)}\hat r_t[a]=r(x_t,a)\ \forall a$:
+  \[
+   \hat r_t[a]=\begin{cases}0 & a\neq a_t\\[2pt] \dfrac{r_t}{1/|\cA|} & a=a_t.\end{cases}
+  \]
+  \item Compute the policy $\hat\pi=\argmax_{\pi\in\Pi}\sum_{t=0}^{N-1}\hat r_t[\pi(x_t)]$.
+  \item For $t=N,\dots,T-1$ (\emph{commit}): observe $x_t\sim\mu$ and play $a_t=\hat\pi(x_t)$.
+\end{enumerate}
+\end{algorithm}
+With a suitable $N$ the regret is
+\[
+  \mathrm{Regret}_T=O\!\left(T^{2/3}K^{1/3}\ln(|\Pi|)^{1/3}\right),\qquad K=|\cA|.
+\]
+
+\begin{intuition}
+The division by $1/|\cA|$ is \emph{importance weighting}: we only see the reward of the arm we actually played, which happens with probability $1/|\cA|$, so we inflate it by $|\cA|$ to be right on average. A numerical feel for the rate: doubling the horizon multiplies the regret bound by only $2^{2/3}\approx1.59$, so the per-round regret decays like $T^{-1/3}$.
+\end{intuition}
+
+\subsection{\texorpdfstring{$\epsilon$}{epsilon}-Greedy \slr{7}}
+Instead of fixing a threshold for exploring and then committing, interleave exploration and exploitation. For $t=0,\dots,T$: observe $x_t\sim\mu$; draw
+\[
+  a_t\sim p_t=(1-\epsilon)\,\delta\big(\pi^t(x_t)\big)+\epsilon\,\mathrm{Unif}(\cA);
+\]
+observe $r_t=r(x_t,a_t)$; build an unbiased estimate $\hat r_t$ for $x_t$ (so that $\E_{a\sim p_t}\hat r_t[a]=r(x_t,a)$); update the policy $\pi^{t+1}=\argmax_{\pi\in\Pi}\sum_{\tau\le t}\hat r_\tau[\pi(x_\tau)]$. Here $\epsilon=0$ means pure exploitation and $\epsilon=1$ uniform exploration. (The slide only asserts unbiasedness; the usual choice is the importance-weighted estimator $\hat r_t[a]=\mathbb 1[a=a_t]\,r_t/p_t(a_t)$.)
+
+\begin{intuition}
+Explore \& Commit explores first, then stops learning. $\epsilon$-greedy never stops: with $\epsilon=0.1$, about one round in ten is a random experiment, and the other nine use the current best guess. It is robust to the case where the early estimates were wrong.
+\end{intuition}
+
+\subsection{Bayesian Bandits \slr{8}}
+So far no assumption was made about the reward distributions $\nu_i$; only bounds on rewards were derived. In Bayesian bandits we (i) exploit \emph{prior} knowledge of rewards, (ii) update a \emph{posterior} distribution from historical information, and (iii) use the posterior to guide exploration, either through upper confidence bounds (Bayesian UCB) or probability matching (Thompson sampling).
+
+\subsection{Gaussian Bayesian Bandits: UCB \slr{9}}
+Now that a distribution is modelled, a notion of confidence comes for free: for Gaussians it is the standard deviation. The UCB rule picks
+\[
+  a_t=\argmax_{i\in K}\;\mu_t(i)+\frac{c\,\sigma_t(i)}{\sqrt{N_t(i)}},
+\]
+where $N_t(i)$ is the number of pulls of arm $i$ and $c$ a constant.
+
+\subsection{Gaussian Bayesian Bandits: Thompson Sampling \slr{10}}
+For $t=0,\dots,T$: for each arm $i=1,\dots,K$ sample $\tilde r_t(i)$ independently from $\mathcal N(\mu_{t-1}(i),\sigma^2_{t-1}(i))$; pull $I_t=\argmax_i\tilde r_t(i)$; observe $r_t$; update the posterior $p(\mu_t(i),\sigma_t^2(i)\mid r_t)$. This can be done with other distributions as well. The slide stresses that this is an estimate of the \emph{reward}: in more general MDPs it is replaced by the $Q$ function, i.e.\ we estimate a distribution over $Q$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[width=0.82\linewidth,height=5.2cm,xlabel={reward estimate},ytick=\empty,
+  axis lines=left,legend style={font=\scriptsize,at={(0.98,0.97)},anchor=north east},
+  domain=-0.1:1.1,samples=120,ymin=0,ymax=5.6]
+ \addplot[blue,thick]{exp(-0.5*((x-0.40)/0.12)^2)/(0.12*2.5066)};
+ \addplot[red,thick]{exp(-0.5*((x-0.55)/0.20)^2)/(0.20*2.5066)};
+ \addplot[green!50!black,thick]{exp(-0.5*((x-0.30)/0.08)^2)/(0.08*2.5066)};
+ \legend{arm 1,arm 2,arm 3}
+ \addplot[blue,dashed] coordinates{(0.46,0)(0.46,2.0)};
+ \addplot[red,dashed] coordinates{(0.78,0)(0.78,0.8)};
+ \addplot[green!50!black,dashed] coordinates{(0.27,0)(0.27,4.5)};
+ \node[red,font=\scriptsize,anchor=south] at (axis cs:0.78,0.9) {highest draw};
+\end{axis}
+\end{tikzpicture}
+\caption{Thompson sampling with Gaussian posteriors (original illustration of the idea on slide 10; the numbers are illustrative). Dashed lines are the independent draws $\tilde r(i)$; the uncertain arm~2 gets the highest draw and is pulled.}
+\end{figure}
+
+\begin{intuition}
+Thompson sampling explores in proportion to uncertainty without any explicit exploration parameter: an arm with a wide posterior occasionally produces a high draw and gets tried; once its posterior narrows and its mean is low, the draws stop beating the others. This is the ``probability matching'' idea: pull each arm with the probability that it is the best.
+\end{intuition}
+
+%=====================================================================
+\section{Sequential Decision Making \slr{12--14}}
+%=====================================================================
+The agent interacts with the environment at discrete time steps, by receiving an observation $o_t$ and a reward $r_t$ from the environment and by taking actions $a_t$ (slide 12).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[>=Stealth,
+  box/.style={draw,minimum width=2.4cm,minimum height=0.8cm,fill=gray!8}]
+  \node[box] (w) at (0,2.2) {World};
+  \node[box] (ag) at (0,0) {Agent};
+  \draw[->,very thick,blue!50!black] (w.west) .. controls (-3,2.2) and (-3,0) .. (ag.west);
+  \draw[->,very thick,blue!50!black] (ag.east) .. controls (3,0) and (3,2.2) .. (w.east);
+  \node[align=right,font=\small] at (-3.2,1.1) {observation $o_t$\\ reward $r_t$};
+  \node[font=\small] at (3.1,1.1) {action $a_t$};
+\end{tikzpicture}
+\caption{The agent--world loop (slides 12--14, redrawn).}
+\end{figure}
+
+Such a discrete interaction generates a trajectory, or \emph{history}, at each time step $t$, which the agent uses to choose its action (slide 13):
+\[
+  h_t=(o_0,a_0,r_1,o_1,a_1,\dots,r_t,o_t,a_t)\quad\text{(indexing convention as on the slide)}.
+\]
+The \emph{state} is a function of the history, $s_t=f(h_t)$, and it is typically hidden or unknown (slide 14).
+
+\begin{intuition}
+The history grows without bound; no practical agent can condition on all of it. The state is a \emph{summary} of the history that is supposed to keep what matters for the future. Which summary is a good one is exactly the question the Markov assumption answers.
+\end{intuition}
+
+%=====================================================================
+\section{Markov Assumption \slr{15--17}}
+%=====================================================================
+\begin{definition}[Markov state]\label{def:markov}
+A state representation is Markov if for every $t$, every history $h_t$ and every action $a_t$,
+\[
+  p(s_{t+1}\mid s_t,a_t)=p(s_{t+1}\mid h_t,a_t).
+\]
+The future is conditionally independent of the past given the present.
+\end{definition}
+
+\begin{intuition}
+If I tell you the current state and my action, nothing in the earlier history can sharpen your prediction of the next state. A chess position is Markov (how we reached it is irrelevant for what can happen next). The position of a moving ball alone is \emph{not}: without its velocity, the past positions carry extra information.
+\end{intuition}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1790936412217.png}
+	\caption{Is this problem Markovian?}\label{fig:1790936412217}
+\end{figure}
+Slide 16 asks, over a picture of a robot in a corridor with two pillars, ``Is this problem Markovian?'' The answer depends on what we put in the state: if the state is only the robot's position but the dynamics depend on, e.g., its velocity or an unobserved internal variable, past observations help predict the future and the state is \emph{not} Markov; adding the missing variables restores the property.
+
+
+Slide 17 gives the two extremes:
+\begin{itemize}[nosep]
+  \item a state can \emph{always} be made Markov by taking it equal to the whole history, $s_t=h_t$;
+  \item the best case, used in practice, is that the state is (a sufficient statistic of) the latest observation, $s_t=o_t$. The state is then said to be \emph{fully observable}.
+\end{itemize}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[>=Stealth,
+  it/.style={draw,minimum width=0.85cm,minimum height=0.6cm,font=\small,fill=gray!10}]
+  \node[it](o0)at(0,0){$o_0$};\node[it,right=0pt of o0](a0){$a_0$};
+  \node[it,right=0pt of a0](r1){$r_1$};\node[it,right=0pt of r1](o1){$o_1$};
+  \node[it,right=0pt of o1](a1){$a_1$};\node[right=2pt of a1,font=\small](dd){$\cdots$};
+  \node[it,right=2pt of dd](rt){$r_t$};\node[it,right=0pt of rt](ot){$o_t$};
+  \draw[decorate,decoration={brace,mirror,amplitude=5pt}] (o0.south west)--(ot.south east)
+     node[midway,below=6pt,font=\small]{history $h_t$ (grows with $t$)};
+  \node[draw,fill=blue!10,minimum height=0.7cm] (s1) at (2,2) {$s_t=h_t$ \; always Markov, but unbounded};
+  \node[draw,fill=green!10,minimum height=0.7cm] (s2) at (8.2,2) {$s_t=o_t$ \; fully observable};
+  \draw[->] (a1.north) to[bend left=15] (s1.south);
+  \draw[->] (ot.north) to[bend right=10] (s2.south);
+\end{tikzpicture}
+\caption{Two extreme choices of state as a function of the history (original illustration of slide 17).}
+\end{figure}
+
+\begin{intuition}
+Choosing $s_t=h_t$ is a cheat: it is trivially Markov, but the state space explodes with time. Practical RL wants a small state that is still Markov. Fully observable means the observation already contains everything relevant; this is the setting of the rest of the lecture.
+\end{intuition}
+
+%=====================================================================
+\section{Markov Decision Process (MDP) \slr{18--19}}
+%=====================================================================
+An MDP is sequential decision making under the Markov assumption: Markovian transition dynamics, full observability, and a (generally) stochastic transition kernel $p(s_{t+1}\mid s_t,a_t)$. Alternative notation: $s_{t+1}\sim p(\cdot\mid s_t,a_t)$ or $s'\sim p(\cdot\mid s,a)$ (slide 19).
+
+\begin{definition}[Markov decision process]\label{def:mdp}
+A discounted infinite-horizon MDP is a tuple $(\cS,\cA,p,r,\gamma)$: a set of states, a set of actions, transition dynamics $p(s'\mid s,a)$ satisfying Definition~\ref{def:markov}, a reward function $r:\cS\times\cA\to[0,\Rmax]$, and a discount factor $\gamma\in[0,1)$. Unless stated otherwise $\cS$ and $\cA$ are finite.
+\end{definition}
+(The slides introduce $\gamma$ later, in the ``Infinite Horizon Discounted Setting'' part; the tuple is stated here in full for reference.)
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[>=Stealth,
+  box/.style={draw,rounded corners=3pt,minimum width=2.6cm,minimum height=0.8cm,fill=gray!8}]
+  \node[box](ag) at (0,2.2){Agent};
+  \node[box](en) at (0,0){Environment};
+  \draw[->,thick] (ag.east) -- ++(1.6,0) |- node[pos=0.2,right,font=\small]{action $A_t$} (en.east);
+  \draw[->,thick] (en.west) -- ++(-1.6,0.0) |- (ag.west);
+  \node[align=right,font=\small] at (-2.6,1.1){state $S_t$\\ reward $R_t$};
+  \node[font=\small,gray!60!black] at (0,-0.9){$\longrightarrow\ S_{t+1}\sim p(\cdot\mid S_t,A_t),\ R_{t+1}$};
+\end{tikzpicture}
+\caption{The MDP interaction loop (slides 18--19, redrawn).}
+\end{figure}
+
+\begin{intuition}
+An MDP is the contextual bandit \emph{with consequences}: the next ``context'' is the next state $s'$, and it is drawn from a distribution that depends on the action just taken. Every action therefore has two effects: the reward now, and the situation in which the next decision is made.
+\end{intuition}
+
+%=====================================================================
+\section{Reward \slr{20}}
+%=====================================================================
+A reward $r_t$ is a scalar signal representing feedback and indicating how well the agent is doing at step $t$. It is a function of state and action, written $r(s,a)$ (sometimes $r(s',a,s)$). A \emph{cost} is the negative of a reward.
+
+\emph{Reward hypothesis} (slide 20, flagged as an open question): can all goals be achieved through the maximisation of a numerical reward?
+
+\begin{intuition}
+The reward is the only way we tell the agent what we want; everything else (what is a good state, a good action) must be \emph{derived} from it. That is why designing rewards is delicate: the agent maximises what we write, not what we meant.
+\end{intuition}
+
+%=====================================================================
+\section{Deterministic MDP Example \slr{21}}
+%=====================================================================
+The slide shows a small deterministic MDP of a developer's day: states \emph{Wake Up} ($r=0$), \emph{Netflix} ($r=-2$, with a self-loop), \emph{Code \& Debug} ($r=-3$), \emph{Nap} ($r=1$), \emph{Deploy} ($r=10$) and \emph{Sleep} ($r=3$, terminal).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[>=Stealth,scale=0.95,
+  st/.style={circle,draw,minimum size=1.35cm,font=\scriptsize\bfseries,align=center,text=white,fill=green!55!black}]
+  \node[st,fill=blue!70](wk) at (0,0){Wake\\Up};
+  \node[st](nf) at (1.8,2.4){Netflix};
+  \node[st](cd) at (4.2,0){Code\\\&\\Debug};
+  \node[st,fill=orange!85!red](sl) at (5.2,3.4){Sleep};
+  \node[st](dp) at (8,0){Deploy};
+  \node[st](np) at (2.4,-2.6){Nap};
+  \draw[->,blue!60!black] (wk)--(nf);
+  \draw[->,blue!60!black] (wk)--(cd);
+  \draw[->,blue!60!black] (nf) to[loop above,looseness=7] (nf);
+  \draw[->,blue!60!black] (cd)--(sl);
+  \draw[->,blue!60!black] (cd)--(dp);
+  \draw[->,blue!60!black] (cd)--(np);
+  \draw[->,blue!60!black] (np)--(wk);
+  \draw[->,blue!60!black] (dp)--(sl);
+  \node[font=\small] at (-1.5,0){$r=0$};
+  \node[font=\small] at (0.3,2.4){$r=-2$};
+  \node[font=\small] at (4.5,-1.0){$r=-3$};
+  \node[font=\small] at (5.2,4.5){$r=3$};
+  \node[font=\small] at (8,-1.2){$r=10$};
+  \node[font=\small] at (2.4,-3.7){$r=1$};
+\end{tikzpicture}
+\caption{The deterministic MDP of slide 21, redrawn. Rewards are attached to states.}
+\end{figure}
+
+\begin{example}[Worked numbers, not on the slide]
+Take $\gamma=0.9$, collect the reward of a state when leaving it, and treat Sleep as terminal (its reward is collected once). Then:
+\begin{itemize}[nosep]
+ \item $V(\text{Sleep})=3$, $V(\text{Deploy})=10+0.9\cdot3=12.7$, $V(\text{Netflix})=-2/(1-0.9)=-20$ (it can only loop).
+ \item From Code \& Debug: $Q(\text{Code},\text{Deploy})=-3+0.9\cdot12.7=8.43$, $Q(\text{Code},\text{Sleep})=-3+0.9\cdot3=-0.3$. The best choice is Deploy: a ``bad'' step (reward $-3$) pays off.
+ \item Hence the path Wake$\to$Code$\to$Deploy$\to$Sleep has discounted return $0+0.9\cdot8.43=7.587$, while Wake$\to$Netflix forever has return $0+0.9\cdot(-20)=-18$.
+ \item Going Code$\to$Nap$\to$Wake gives $V(\text{Nap})=1+0.9\cdot7.587\approx7.83$ and $Q(\text{Code},\text{Nap})\approx4.05<8.43$, so Nap loses.
+\end{itemize}
+\end{example}
+
+\begin{intuition}
+The immediate reward at Code \& Debug is negative ($-3$), yet it is the right place to go through: all the value sits behind it (Deploy $=10$). A myopic agent at Wake Up compares $-2$ (Netflix) with $-3$ (Code \& Debug) and picks Netflix, where it is stuck forever with value $-20$; maximising the \emph{return} sends it through Code \& Debug instead. This is the entire reason we define value functions.
+\end{intuition}
+
+%=====================================================================
+\section{Stochastic MDP Example \slr{22}}
+%=====================================================================
+The slide (taken from Sutton \& Barto) shows the \emph{recycling robot}: states \texttt{high} and \texttt{low} battery; actions \texttt{search}, \texttt{wait}, \texttt{recharge}. The transition table of the slide is:
+\begin{center}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{llllc}
+\toprule
+$s$ & $a$ & $s'$ & $p(s'\mid s,a)$ & $r(s,a,s')$\\
+\midrule
+high & search   & high & $\alpha$   & $r_{\text{search}}$\\
+high & search   & low  & $1-\alpha$ & $r_{\text{search}}$\\
+low  & search   & high & $1-\beta$  & $-3$\\
+low  & search   & low  & $\beta$    & $r_{\text{search}}$\\
+high & wait     & high & $1$        & $r_{\text{wait}}$\\
+high & wait     & low  & $0$        & --\\
+low  & wait     & high & $0$        & --\\
+low  & wait     & low  & $1$        & $r_{\text{wait}}$\\
+low  & recharge & high & $1$        & $0$\\
+low  & recharge & low  & $0$        & --\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[>=Stealth,
+  st/.style={circle,draw,minimum size=1.3cm},
+  ac/.style={circle,fill=black,inner sep=1.4pt}]
+  \node[st](hi) at (0,0){high};
+  \node[st](lo) at (7,0){low};
+  \path (hi) edge[->,loop left,looseness=6] node[left,font=\scriptsize]{wait: $1,\,r_{\text{wait}}$} (hi);
+  \path (lo) edge[->,loop right,looseness=6] node[right,font=\scriptsize]{wait: $1,\,r_{\text{wait}}$} (lo);
+  % search from high
+  \node[ac](sh) at (1.6,-1.8){};
+  \draw (hi)--(sh) node[pos=0.45,left,font=\scriptsize]{search};
+  \draw[->] (sh) to[bend left=20] node[pos=0.5,below left,font=\scriptsize]{$\alpha,\,r_{\text{search}}$} (hi);
+  \draw[->] (sh) to[bend right=10] node[below,font=\scriptsize]{$1-\alpha,\,r_{\text{search}}$} (lo);
+  % search from low
+  \node[ac](sl) at (7,2.1){};
+  \draw (lo)--(sl) node[pos=0.5,left,font=\scriptsize]{search};
+  \draw[->] (sl) to[bend left=45] node[right,font=\scriptsize]{$\beta,\,r_{\text{search}}$} (lo);
+  \draw[->] (sl) to[bend right=30] node[above,font=\scriptsize]{$1-\beta,\,-3$} (hi);
+  % recharge
+  \node[ac](rc) at (3.5,0){};
+  \draw (lo)--(rc) node[pos=0.5,above,font=\scriptsize]{recharge};
+  \draw[->] (rc)--(hi) node[pos=0.5,below,font=\scriptsize]{$1,\,0$};
+\end{tikzpicture}
+\caption{Transition graph of the recycling robot (slide 22, redrawn). Black dots are actions; edge labels are (probability, reward).}
+\end{figure}
+
+\begin{example}[Worked numbers, not on the slide]
+Let $\alpha=0.7$, $\beta=0.4$, $r_{\text{search}}=2$, $r_{\text{wait}}=1$. At \texttt{low}, the expected \emph{immediate} reward of \texttt{search} is $0.4\cdot2+0.6\cdot(-3)=-1.0$, versus $+1$ for \texttt{wait}. Searching with a low battery is risky: with probability $0.6$ the robot runs flat, is rescued (reward $-3$) and ends up at \texttt{high}.
+\end{example}
+
+\begin{intuition}
+Stochasticity means the same action from the same state can lead to different next states. Here a single decision (``search with a low battery'') is a gamble, and the right choice depends on the state: at \texttt{high} searching is cheap, at \texttt{low} it is not. A policy is precisely a rule for making this state-dependent choice.
+\end{intuition}
+
+%=====================================================================
+\section{Policy \slr{23}}
+%=====================================================================
+A policy $\pi$ is a mapping from (all) states to actions that determines how the agent selects actions. It can be deterministic, $a=\pi(s)$, or stochastic, $\pi(a\mid s)$, $p(a\mid s)$ or $a\sim\pi(\cdot\mid s)$.
+
+\begin{intuition}
+A policy is a complete \emph{strategy}, not a plan: it says what to do in \emph{every} state, including the ones I might never reach. In the recycling robot there are $2\cdot3=6$ deterministic policies (two choices at \texttt{high}, three at \texttt{low}); in general there are $|\cA|^{|\cS|}$, which is why we will need structure (Bellman equations) rather than brute-force enumeration.
+\end{intuition}
+
+%=====================================================================
+\section{Trajectory Probability \slr{24}}
+%=====================================================================
+What is the probability of seeing the trajectory $(s_0,a_0,s_1,a_1,\dots,s_t,a_t)$ at time $t$ when following $\pi$ from $s_0$? Using the Markov property and the fact that $\pi$ depends only on the current state:
+\[
+  \PP^\pi(s_0,a_0,\dots,s_t,a_t)=\pi(a_0\mid s_0)\,p(s_1\mid s_0,a_0)\,\pi(a_1\mid s_1)\cdots p(s_t\mid s_{t-1},a_{t-1})\,\pi(a_t\mid s_t).
+\]
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[>=Stealth,
+  n/.style={circle,draw,minimum size=0.9cm}]
+  \node[n](s0)at(0,1.4){$s_0$};\node[n](s1)at(2.6,1.4){$s_1$};\node[n](s2)at(5.2,1.4){$s_2$};
+  \node[n](a0)at(1.3,0){$a_0$};\node[n](a1)at(3.9,0){$a_1$};
+  \node at (6.6,1.4){$\cdots$};
+  \draw[->](s0)--(s1);\draw[->](s1)--(s2);\draw[->](s0)--(a0);\draw[->](a0)--(s1);
+  \draw[->](s1)--(a1);\draw[->](a1)--(s2);\draw[->](s2)--(6.2,1.4);
+  \node[font=\scriptsize] at (1.3,2.0){$p(s_1\mid s_0,a_0)$};
+  \node[font=\scriptsize,anchor=east] at (0.45,0.55){$\pi(a_0\mid s_0)$};
+\end{tikzpicture}
+\caption{Graphical model of a trajectory (slide 24, redrawn).}
+\end{figure}
+
+\begin{intuition}
+Each factor is one coin flip: the agent's flip ($\pi$) followed by the world's flip ($p$). Numbers: if $\pi(a_0|s_0)=0.5$, $p(s_1|s_0,a_0)=0.9$ and $\pi(a_1|s_1)=1$, then the probability of the length-2 trajectory $(s_0,a_0,s_1,a_1)$ is $0.5\cdot0.9\cdot1=0.45$.
+\end{intuition}
+
+%=====================================================================
+\section{State Visitation Probability \slr{25--27}}
+%=====================================================================
+\subsection{Definition \slr{25}}
+What is the probability of visiting $(s,a)$ at time $t$ when following $\pi$ from $s_0$? Marginalise the trajectory probability over everything except the last pair:
+\[
+  \PP^\pi_t(s,a;s_0)=\sum_{a_0,s_1,a_1,\dots,s_{t-1},a_{t-1}}\PP^\pi(s_0,a_0,\dots,s_t=s,a_t=a).
+\]
+
+\begin{intuition}
+It answers ``if I run the policy many times, in what fraction of the runs am I in $(s,a)$ at time $t$?'' Plotting it for every state gives a heat map that moves and spreads with $t$.
+\end{intuition}
+
+\subsection{Examples \slr{26--27}}
+Slide 26 shows, for a policy that goes to the goal in a gridworld with $10\%$ slip, the visitation probability estimated over $2000$ simulations, together with the probability mass in the (absorbing) goal as a function of $t$. Slide 27 shows the same for a \emph{random} policy, on a log scale: the mass at the goal stays essentially $0$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[scale=0.42]
+  \fill[violet!25!black!85] (0,0) rectangle (15,10);
+  \fill[gray!15] (4.5,1) rectangle (5.7,4.2);
+  \fill[gray!15] (4.5,5) rectangle (5.7,8.7);
+  \fill[gray!15] (9.2,1) rectangle (10.4,6.9);
+  \fill[gray!15] (9.2,8.2) rectangle (10.4,9.2);
+  \fill[yellow!80!green] (12.9,6.9) rectangle (14.1,8.1);
+  \node[red!70!black] at (13.5,7.5) {$\star$};
+  \fill[black] (1.5,2) circle (0.3);
+  \draw[->,thick,white,dash pattern=on 3pt off 2pt] (1.5,2)--(1.5,4.6)--(8,4.6)--(8,7.5)--(12.8,7.5);
+  \draw[->,orange,dotted,thick] (1.5,4.6)--(1.5,3.6);
+  \node[white,font=\scriptsize,anchor=west] at (0.2,9.4) {start $\bullet$ \quad goal $\star$ \quad dashed: nominal path};
+\end{tikzpicture}
+\hfill
+\begin{tikzpicture}
+\begin{axis}[width=0.46\linewidth,height=4.6cm,xlabel={time $t$},ylabel={$d^\pi_t(\text{goal})$},
+  xmin=0,xmax=34,ymin=0,ymax=1,grid=both,grid style={dashed,gray!30},domain=0:34,samples=69,
+  legend style={font=\scriptsize,at={(0.03,0.97)},anchor=north west}]
+ \addplot[orange!85!black,very thick]{(x>15)*0.95*(1-exp(-((x-15)/12)^2))};
+ \addplot[blue!60!black,very thick,dashed]{0.0005};
+ \legend{goal-directed ($10\%$ slip),random}
+\end{axis}
+\end{tikzpicture}
+\caption{Schematic gridworld (left) and shape of the probability mass at the absorbing goal (right) for a goal-directed policy versus a random one. The curve is an original schematic read off slides 26--27, \emph{not} the data of the slide.}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1790936537236.png}
+	\caption{Heat map of $d^\pi_t(s)$ for the goal-directed policy (10\% slip, 2000 simulations) with the ``mass at the goal'' curve.}\label{fig:1790936537236}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1790936575533.png}
+	\caption{Same for the random policy, probability on log scale.}\label{fig:1790936575533}
+\end{figure}
+\begin{intuition}
+Under the goal-directed policy nothing reaches the goal for the first ${\sim}15$ steps (that is the minimum distance), then the mass climbs towards $1$; the missing mass is runs that slipped and are still on the way. The random policy diffuses over the grid so thinly that its goal mass is almost $0$ at every time: the visitation distribution is a fingerprint of the policy's behaviour.
+\end{intuition}
+
+%=====================================================================
+\section{Another Example MDP \slr{28}}
+%=====================================================================
+A robotic arm that must move a ball (slide 28):
+\begin{itemize}[nosep]
+  \item \textbf{state:} robot configuration (joint states) and ball position;
+  \item \textbf{action:} torque on arm and finger joints;
+  \item \textbf{transition:} stochastic, physics plus noise;
+  \item \textbf{policy:} mapping from robot state and ball position to torque;
+  \item \textbf{cost:} magnitude of the torque and distance to the goal.
+\end{itemize}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1790936625953.png}
+	\caption{Photo of a robotic arm manipulating a ball}\label{fig:1790936625953}
+\end{figure}
+\begin{intuition}
+Same five ingredients, a very different world: continuous states and actions, physics instead of a table of probabilities, and a cost made of two competing terms (effort and distance to goal). The abstract tuple $(\cS,\cA,p,r)$ covers both the toy table above and a robot.
+\end{intuition}
+
+%=====================================================================
+\section{Infinite Horizon Discounted Setting \slr{29}}
+%=====================================================================
+So far the MDP is $(\cS,\cA,p,r)$. We now add a discount factor $\gamma$ to reason about the long-term effects of a policy, with $\gamma$ in $[0,1]$ on the slide: $\gamma=0$ means ``I only care about immediate rewards'', while $\gamma=1$ means immediate and future rewards are equally important. The slide leaves ``How so?'' as a question; it is answered in ``Back to Discount Factor'' below, where we see that $\gamma=1$ is a bad idea for infinite tasks and the formal definition (Definition~\ref{def:mdp}) takes $\gamma<1$.
+
+\begin{intuition}
+$\gamma$ is a patience dial. At $\gamma=0.5$ a reward two steps away is worth $0.25$ of the same reward now; at $\gamma=0.99$ it is worth $0.98$.
+\end{intuition}
+
+%=====================================================================
+\section{Value Function \slr{30--31}}
+%=====================================================================
+We estimate the \emph{goodness} of states and actions by their value, which is also a measure to compare policies. The state-value function of a policy $\pi$ is the expected discounted return from $s$ (slide 30):
+\begin{align*}
+  V^\pi(s_t)&=\E\!\left[r_t+\gamma r_{t+1}+\gamma^2r_{t+2}+\cdots\mid s_t\right]\\
+  &=\E\!\left[\sum_{h=0}^{\infty}\gamma^hr_{t+h}\;\Big|\;s_t=s,\ a_h=\pi(s_h),\ s_{h+1}\sim p(\cdot\mid s_h,a_h)\right].
+\end{align*}
+Slide 31 adds the action-value function, where the first action is fixed and then $\pi$ is followed:
+\begin{align*}
+  Q^\pi(s_t,a_t)=\E\!\Big[\sum_{h=0}^{\infty}\gamma^hr_{t+h}\;\Big|\;&(s_t,a_t)=(s,a),\\
+  &a_h=\pi(s_h),\ s_{h+1}\sim p(\cdot\mid s_h,a_h)\Big].
+\end{align*}
+
+\begin{intuition}
+$V^\pi(s)$: ``how good is it to \emph{be} in $s$ if I then follow $\pi$?'' $Q^\pi(s,a)$: ``how good is it to take $a$ \emph{now} in $s$ and then follow $\pi$?'' The difference between the two is one free first decision. Comparing $Q^\pi(s,a)$ across $a$ is how an agent decides which action is better than the policy's current choice.
+\end{intuition}
+
+%=====================================================================
+\section{Back to Discount Factor \slr{32}}
+%=====================================================================
+Setting $\gamma=1$ for infinite tasks is a bad idea. The quantity $\sum_{h=0}^\infty\gamma^h$ is a geometric series, equal to $1/(1-\gamma)$ for $\gamma\in[0,1)$, so the value of $\gamma$ approximately determines how many steps ahead we are looking: e.g.\ $\gamma=0.99$ corresponds to ${\sim}100$ time steps.
+
+\begin{lemma}[Values are finite, and how finite]\label{lem:bound}
+For every policy and every state, $0\le V^\pi(s)\le\dfrac{\Rmax}{1-\gamma}$.
+\end{lemma}
+\begin{proof}
+Rewards lie in $[0,\Rmax]$, so $0\le\sum_h\gamma^hr_h\le\Rmax\sum_{h\ge0}\gamma^h=\Rmax/(1-\gamma)$, the geometric series converging because $\gamma<1$. Expectations preserve the bounds.
+\end{proof}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[width=0.48\linewidth,height=5cm,xlabel={step $h$},ylabel={weight $\gamma^h$},xmin=0,xmax=100,ymin=0,ymax=1.05,
+  legend style={font=\scriptsize,at={(0.97,0.97)},anchor=north east},domain=0:100,samples=101,grid=both,grid style={dashed,gray!30}]
+ \addplot[blue,thick]{0.9^x};
+ \addplot[red,thick]{0.99^x};
+ \addplot[green!50!black,thick]{0.5^x};
+ \legend{$\gamma=0.9$,$\gamma=0.99$,$\gamma=0.5$}
+\end{axis}
+\end{tikzpicture}
+\hfill
+\begin{tikzpicture}
+\begin{axis}[width=0.48\linewidth,height=5cm,xlabel={$\gamma$},ylabel={$1/(1-\gamma)$},xmin=0,xmax=1,ymin=0,ymax=100,
+  domain=0:0.99,samples=100,grid=both,grid style={dashed,gray!30}]
+ \addplot[orange!85!black,thick]{1/(1-x)};
+\end{axis}
+\end{tikzpicture}
+\caption{Left: discount weights $\gamma^h$. Right: the effective horizon $1/(1-\gamma)$ diverges as $\gamma\to1$ (original figures for slide 32).}
+\end{figure}
+
+\begin{intuition}
+With $\gamma=0.99$ the weight $\gamma^{h}$ falls to $\gamma^{100}\approx0.37\approx1/e$ after about $100$ steps; with $\gamma=0.9$ the same happens after about $10$ steps. If rewards are at most $\Rmax=1$, the value can never exceed $1/(1-0.99)=100$; at $\gamma=1$ the bound is infinite and the sum of rewards of an endless task need not exist at all. The discount is what makes ``the value of a state'' a well-defined finite number.
+\end{intuition}
+
+%=====================================================================
+\section{Bellman Equation \slr{33--36}}
+%=====================================================================
+The value of a state is expanded in terms of the current reward and the value of the next states according to the policy (slide 33): for a deterministic $\pi$,
+\[
+  V^\pi(s_t)=\E_\pi\!\left[r_t+\gamma r_{t+1}+\gamma^2r_{t+2}+\cdots\mid s_t\right]=r_t+\gamma\,\E_{s'\sim p(\cdot\mid s_t,\pi(s_t))}\!\left[V^\pi(s')\right],
+\]
+and likewise for $Q$ (slides 34--36):
+\[
+  Q^\pi(s_t,a_t)=r_t+\gamma\,\E_{s'\sim p(\cdot\mid s_t,a_t)}\!\left[V^\pi(s')\right].
+\]
+In the first equation $r$ is a function of $s$ and $\pi(s)$; in the second, of $s$ and $a$. As a result $V^\pi(s)=Q^\pi(s,\pi(s))$ (slide 36).
+
+\begin{theorem}[Bellman expectation equations]\label{thm:bellexp}
+For every policy $\pi$ and all $s,a$:
+\begin{align*}
+ V^\pi(s)&=\E_{a\sim\pi(\cdot\mid s)}\Big[r(s,a)+\gamma\,\E_{s'\sim p(\cdot\mid s,a)}\big[V^\pi(s')\big]\Big],\\
+ Q^\pi(s,a)&=r(s,a)+\gamma\,\E_{s'\sim p(\cdot\mid s,a)}\big[V^\pi(s')\big],\\
+ V^\pi(s)&=\E_{a\sim\pi(\cdot\mid s)}\big[Q^\pi(s,a)\big].
+\end{align*}
+For a deterministic policy the first reads $V^\pi(s)=r(s,\pi(s))+\gamma\E_{s'\sim p(\cdot\mid s,\pi(s))}[V^\pi(s')]$ and the last $V^\pi(s)=Q^\pi(s,\pi(s))$.
+\end{theorem}
+\begin{proof}
+Split the return after the first step using $G_0=r(s_0,a_0)+\gamma G_1$:
+$V^\pi(s)=\E^\pi[G_0\mid s_0=s]=\E^\pi[r(s_0,a_0)\mid s_0=s]+\gamma\E^\pi[G_1\mid s_0=s]$.
+Condition the second term on $(a_0,s_1)$ and use the tower rule. By Definition~\ref{def:markov} and the fact that $\pi$ depends only on the current state, the conditional distribution of the trajectory from $s_1$ onwards given $(s_0,a_0,s_1)$ is the same as that of a trajectory started at $s_1$; hence $\E^\pi[G_1\mid s_0=s,a_0=a,s_1=s']=V^\pi(s')$. Averaging over $s'\sim p(\cdot\mid s,a)$ and then over $a\sim\pi(\cdot\mid s)$ gives the first identity; the argument for $Q^\pi$ is the same with $a_0$ fixed.
+\end{proof}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[>=Stealth,
+  s/.style={circle,draw,minimum size=0.75cm,font=\small},
+  a/.style={circle,fill=black,inner sep=1.4pt}]
+  % V backup
+  \begin{scope}
+   \node[s](v) at (0,3){$s$};
+   \node[a](a1) at (-1.5,1.5){};\node[a](a2) at (1.5,1.5){};
+   \draw[->](v)--(a1) node[pos=0.5,left,font=\scriptsize]{$\pi(a_1|s)$};
+   \draw[->](v)--(a2) node[pos=0.5,right,font=\scriptsize]{$\pi(a_2|s)$};
+   \node[s](na) at (-2.4,0){$s'$};\node[s](nb) at (-0.6,0){$s'$};
+   \node[s](nc) at (0.6,0){$s'$};\node[s](nd) at (2.4,0){$s'$};
+   \draw[->](a1)--(na);\draw[->](a1)--(nb);\draw[->](a2)--(nc);\draw[->](a2)--(nd);
+   \node[font=\scriptsize] at (-2.1,0.85){$p(s'|s,a_1)$};
+   \node[font=\scriptsize] at (2.1,0.85){$p(s'|s,a_2)$};
+   \node[font=\small] at (0,-0.9){$V^\pi(s)$ from $V^\pi(s')$};
+  \end{scope}
+  % Q backup
+  \begin{scope}[xshift=7.6cm]
+   \node[a,label=right:{\scriptsize $(s,a)$}](q) at (0,3){};
+   \node[s](ml) at (-1.5,1.5){$s'$};\node[s](mr) at (1.5,1.5){$s'$};
+   \draw[->](q)--(ml) node[pos=0.5,left,font=\scriptsize]{$p(s'|s,a)$};\draw[->](q)--(mr);
+   \node[a](b1) at (-2.1,0){};\node[a](b2) at (-0.9,0){};\node[a](b3) at (0.9,0){};\node[a](b4) at (2.1,0){};
+   \draw[->](ml)--(b1);\draw[->](ml)--(b2);\draw[->](mr)--(b3);\draw[->](mr)--(b4);
+   \node[font=\scriptsize] at (-2.6,0.8){$\pi(a'|s')$};
+   \node[font=\small] at (0,-0.9){$Q^\pi(s,a)$ from $Q^\pi(s',a')$};
+  \end{scope}
+\end{tikzpicture}
+\caption{Backup diagrams for the Bellman expectation equations (original figure for slides 33--36).}
+\end{figure}
+
+\begin{intuition}
+The equation says: \emph{value now = reward now + discounted value of where I land}. It turns an infinite sum into a one-step consistency condition. Example (deterministic): if $r(s,\pi(s))=1$, $\gamma=0.9$ and the next state always has value $V^\pi(s')=10$, then $V^\pi(s)=1+0.9\cdot10=10$. The two lines of the theorem differ only in what is averaged: $V$ averages over my action choice (policy), $Q$ has the first action already fixed and averages only over the environment's randomness.
+\end{intuition}
+
+%=====================================================================
+\section{Discounted State-Action Distribution \slr{37--38}}
+%=====================================================================
+\begin{definition}[Discounted state-action distribution]\label{def:dsa}
+\[
+  d^\pi_{s_0}(s,a)=(1-\gamma)\sum_{h=0}^{\infty}\gamma^h\,\PP^\pi_h(s,a;s_0).
+\]
+For an initial distribution $\mu$ write $d^\pi_\mu(s,a)=\E_{s_0\sim\mu}[d^\pi_{s_0}(s,a)]$.
+\end{definition}
+
+\begin{lemma}[It is a distribution, and that is the point of the $(1-\gamma)$]\label{lem:dist}
+$d^\pi_{s_0}$ is a probability distribution over $\cS\times\cA$.
+\end{lemma}
+\begin{proof}
+Non-negativity is clear. Summing over $(s,a)$ and exchanging the (absolutely convergent) sums,
+$\sum_{s,a}d^\pi_{s_0}(s,a)=(1-\gamma)\sum_h\gamma^h\sum_{s,a}\PP^\pi_h(s,a;s_0)=(1-\gamma)\sum_h\gamma^h=1$, since $\PP^\pi_h(\cdot;s_0)$ is a distribution for each $h$.
+\end{proof}
+This matches the slide's remark: ``this gives us a probability distribution (remember $\sum_h\gamma^h=1/(1-\gamma)$)''. The companion identity expressing discounted sums as expectations under $d^\pi_{s_0}$ is not on the slides and is given in Appendix~\ref{app:identity}.
+
+\begin{intuition}
+Take the visitation probabilities of the previous section, weight time step $h$ by $\gamma^h$ and sum them: this is ``how much total (discounted) time I spend in $(s,a)$''. Without the factor $(1-\gamma)$ the total mass would be $1/(1-\gamma)$ (e.g.\ $100$ for $\gamma=0.99$); multiplying by $(1-\gamma)$ rescales it to $1$ so it can be used as a genuine probability distribution. Early time steps get most of the weight, which is the same patience dial as before.
+\end{intuition}
+
+%=====================================================================
+\section{Optimal Policy \slr{39--40}}
+%=====================================================================
+\begin{definition}[Optimal value and optimal policy]\label{def:opt}
+$V^\star(s)=\sup_\pi V^\pi(s)$ and $Q^\star(s,a)=\sup_\pi Q^\pi(s,a)$. A policy $\pi^\star$ is optimal if $V^{\pi^\star}(s)=V^\star(s)$ for every $s$.
+\end{definition}
+
+Slides 39--40 state that for infinite-horizon MDPs there \emph{always} exists a deterministic policy $\pi^\star$ such that
+\[
+  V^{\pi^\star}(s)\ge V^\pi(s)\qquad\forall s,\pi,
+\]
+i.e.\ $\pi^\star$ dominates all other policies in each state; it returns optimal actions $a^\star$, and $V^{\pi^\star}=V^\star$, $Q^{\pi^\star}=Q^\star$. The existence statement is proved constructively by Theorem~\ref{thm:greedy} below.
+
+\begin{intuition}
+It is far from obvious that one policy can be best \emph{in all states simultaneously}; in many optimisation problems the best choice for one objective hurts another. Here it is true, and it is also true that we never need randomness: a table of ``best action in each state'' suffices. This is what makes the search for optimal behaviour tractable.
+\end{intuition}
+
+%=====================================================================
+\section{Bellman Optimality \slr{41--42}}
+%=====================================================================
+\begin{theorem}[Bellman optimality equation]\label{thm:bellopt}
+\begin{align*}
+ V^\star(s)&=\max_a\Big[r(s,a)+\gamma\,\E_{s'\sim p(\cdot\mid s,a)}V^\star(s')\Big],\\
+ Q^\star(s,a)&=r(s,a)+\gamma\,\E_{s'\sim p(\cdot\mid s,a)}\Big[\max_{a'}Q^\star(s',a')\Big].
+\end{align*}
+\end{theorem}
+On slide 42 the bracket $r(s,a)+\gamma\E_{s'}V^\star(s')$ is annotated as $Q^\star(s,a)$, so that $V^\star(s)=\max_aQ^\star(s,a)$.
+
+\begin{intuition}
+The Bellman \emph{expectation} equation averages over the policy's action; the Bellman \emph{optimality} equation replaces that average by a $\max$: the optimal agent simply takes the best action. All the difficulty of looking arbitrarily far into the future is hidden in $V^\star(s')$: if I knew the optimal value of every neighbour, choosing the best action would be a one-step problem.
+\end{intuition}
+
+%=====================================================================
+\section{Bellman Optimality Example \slr{43--45}}
+%=====================================================================
+Assume we know $V^\star$ at $s'$ and $s''$, the two successors of $s$ reached by actions $a'$ and $a''$ (slide 43). Try $a'$, get $r(s,a')$ and compute $Q^\star(s,a')=r(s,a')+\gamma V^\star(s')$; try $a''$ and compute $Q^\star(s,a'')=r(s,a'')+\gamma V^\star(s'')$ (slide 44). Then (slide 45)
+\[
+  V^\star(s)=\max_{a',a''}\{Q^\star(s,a'),\,Q^\star(s,a'')\}.
+\]
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[>=Stealth,
+  n/.style={circle,draw,fill=green!30,minimum size=0.9cm}]
+  \node[n](s) at (0,2){$s$};
+  \node[n](s1) at (-2.4,0){$s'$};
+  \node[n](s2) at (2.4,0){$s''$};
+  \draw[->](s)--(s1) node[midway,left,font=\small]{$a'$};
+  \draw[->](s)--(s2) node[midway,right,font=\small]{$a''$};
+  \node[font=\scriptsize,align=center] at (-2.4,-1.0){$r(s,a')=1$\\$V^\star(s')=5$\\[2pt]$Q^\star(s,a')=1+0.9\cdot5=5.5$};
+  \node[font=\scriptsize,align=center] at (2.4,-1.0){$r(s,a'')=3$\\$V^\star(s'')=2$\\[2pt]$Q^\star(s,a'')=3+0.9\cdot2=4.8$};
+  \node[red!70!black,font=\small,anchor=west] at (1.0,2.3){$V^\star(s)=\max\{5.5,\,4.8\}=5.5$};
+\end{tikzpicture}
+\caption{The one-step lookahead of slides 43--45 with illustrative numbers ($\gamma=0.9$; the numbers are mine, not the slide's).}
+\end{figure}
+
+\begin{intuition}
+With the numbers above the action with the \emph{larger immediate reward} ($a''$, reward $3$) is \emph{not} the best: $a'$ leads to a state worth $5$, and $1+4.5>3+1.8$. This is the one-step trick that everything else in the course rests on: evaluate each action as ``reward + discounted value of where it leads'' and take the best.
+\end{intuition}
+
+%=====================================================================
+\section{Bellman Optimality (Theorem 1) \slr{46--49}}
+%=====================================================================
+\begin{theorem}[Theorem 1 --- greedy with respect to $Q^\star$ is optimal]\label{thm:greedy}
+Let $\hat\pi(s)\in\argmax_aQ^\star(s,a)$. Then $V^{\hat\pi}=V^\star$, and therefore $\pi^\star=\hat\pi$ is an optimal policy.
+\end{theorem}
+
+\subsection*{Proof as shown on the slides (slides 46--48)}
+Starting from $V^\star(s)=\max_a[r(s,a)+\gamma\E_{s'}V^\star(s')]$ and unrolling the equation along $\hat\pi$:
+\begin{align*}
+V^\star(s)&=r(s,\pi^\star(s))+\gamma\E_{s'}V^\star(s')\\
+&\le\max_a\Big[r(s,a)+\gamma\E_{s'}V^\star(s')\Big]=r(s,\hat\pi(s))+\gamma\E_{s'}V^\star(s')\\
+&\le r(s,\hat\pi(s))+\gamma\E_{s'\sim p(\cdot|s,\hat\pi(s))}\Big[r(s',\hat\pi(s'))+\gamma\E_{s''}V^\star(s'')\Big]\\
+&\le\cdots\le\E\Big[r(s,\hat\pi(s))+\gamma r(s',\hat\pi(s'))+\cdots\Big]=V^{\hat\pi}(s),
+\end{align*}
+so $V^{\hat\pi}\ge V^\star$ (the leftover term $\gamma^k\E V^\star(s_k)\to0$ since $V^\star$ is bounded, Lemma~\ref{lem:bound}); and $V^\star\ge V^{\hat\pi}$ holds by definition of $V^\star$ as a supremum. Hence $V^{\hat\pi}=V^\star$ and, by slide 49, $\pi^\star=\argmax_aQ^\star(s,a)$ is an optimal policy.
+
+\subsection*{Proof in the companion text (fixed-point argument)}
+\begin{proof}
+By Theorem~\ref{thm:bellopt}, $V^\star=\mathcal BV^\star$ and $Q^\star(s,a)=r(s,a)+\gamma\E_{s'}[V^\star(s')]$ (the operators $\mathcal B,\mathcal B^{\hat\pi}$ are recalled in Appendix~\ref{app:ops}). Since $\hat\pi(s)$ maximises $Q^\star(s,\cdot)$,
+\[
+(\mathcal BV^\star)(s)=\max_aQ^\star(s,a)=Q^\star\big(s,\hat\pi(s)\big)=r\big(s,\hat\pi(s)\big)+\gamma\E_{s'\sim p(\cdot|s,\hat\pi(s))}\big[V^\star(s')\big]=(\mathcal B^{\hat\pi}V^\star)(s),
+\]
+so $V^\star$ is a fixed point of $\mathcal B^{\hat\pi}$. By Theorem~\ref{thm:bellexp} so is $V^{\hat\pi}$, and both are bounded by Lemma~\ref{lem:bound}.
+
+A bounded fixed point of $\mathcal B^{\hat\pi}$ is unique. If $u$ and $v$ are two, then for every $s$
+\[
+|u(s)-v(s)|=\gamma\Big|\E_{s'}\big[u(s')-v(s')\big]\Big|\le\gamma\|u-v\|_\infty,
+\]
+because the rewards cancel, so $\|u-v\|_\infty\le\gamma\|u-v\|_\infty$. The norm is finite and $\gamma<1$, hence $u=v$. Therefore $V^{\hat\pi}=V^\star$, and $\hat\pi$ attains the supremum of Definition~\ref{def:opt} at every state.
+\end{proof}
+
+\begin{intuition}
+Theorem~1 is the license to \emph{act}: once someone hands me $Q^\star$, I do not need to plan any more; the single-step rule ``pick the action with the largest $Q^\star(s,\cdot)$'' is already globally optimal. The slide proof says it as a sandwich: following $\hat\pi$ can't be better than optimal ($V^{\hat\pi}\le V^\star$), and by unrolling the optimality equation it can't be worse either ($V^{\hat\pi}\ge V^\star$). The book proof says the same thing differently: $V^\star$ and $V^{\hat\pi}$ solve the same one-policy equation, and that equation has only one bounded solution because each application shrinks distances by $\gamma<1$.
+\end{intuition}
+
+%=====================================================================
+\section{Bellman Optimality (Theorem 2) \slr{50--55}}
+%=====================================================================
+\begin{theorem}[Theorem 2 --- the optimality equation has one solution]\label{thm:unique}
+If $V:\cS\to\mathbb R$ satisfies $V(s)=\max_a\big[r(s,a)+\gamma\E_{s'\sim p(\cdot|s,a)}V(s')\big]$ for every $s$, then $V=V^\star$.
+\end{theorem}
+The slides (51--53) ask us to check that $\|V-V^\star\|_\infty=0$ and then unroll the difference.
+\begin{proof}
+Both $V$ and $V^\star$ satisfy the same equation, so for every $s$,
+\begin{align*}
+|V(s)-V^\star(s)|&=\Big|\max_a\big[r(s,a)+\gamma\E_{s'}V(s')\big]-\max_a\big[r(s,a)+\gamma\E_{s'}V^\star(s')\big]\Big|\\
+&\le\max_a\Big|\big[r(s,a)+\gamma\E_{s'}V(s')\big]-\big[r(s,a)+\gamma\E_{s'}V^\star(s')\big]\Big|\\
+&=\max_a\gamma\Big|\E_{s'\sim p(\cdot|s,a)}\big[V(s')-V^\star(s')\big]\Big|\\
+&\le\gamma\max_a\E_{s'\sim p(\cdot|s,a)}\big|V(s')-V^\star(s')\big|.
+\end{align*}
+The first inequality is $|\max_af(a)-\max_ag(a)|\le\max_a|f(a)-g(a)|$; the last is Jensen. Applying the same bound to $|V(s')-V^\star(s')|$ and iterating $k$ times,
+\[
+|V(s)-V^\star(s)|\le\gamma^k\max_{a_0,\dots,a_{k-1}}\E_{s_k}\big|V(s_k)-V^\star(s_k)\big|\le\gamma^k\|V-V^\star\|_\infty,
+\]
+and since $\gamma<1$ and $\|V-V^\star\|_\infty$ is finite, the right-hand side tends to $0$. Hence $|V(s)-V^\star(s)|=0$ for every $s$.
+\end{proof}
+
+Slide 54 illustrates the shrinking bound $\gamma^h\|V-V^\star\|_\infty$ as the number of future steps $h$ grows (its example uses $\gamma=0.92$ and a baseline $\|V-V^\star\|_\infty=1$).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[width=0.78\linewidth,height=5cm,xlabel={future steps $h$},ylabel={$\gamma^h\|V-V^\star\|_\infty$},
+  xmin=-1,xmax=41,ymin=0,ymax=1.05,grid=both,grid style={dashed,gray!30}]
+ \addplot[ycomb,green!50!black,thick,mark=*,mark size=1.4pt,domain=0:40,samples=41]{0.92^x};
+ \draw[dashed,orange] (axis cs:-1,1)--(axis cs:41,1);
+ \node[orange!70!black,font=\scriptsize,anchor=south west] at (axis cs:12,1.0){baseline $\|V-V^\star\|_\infty=1$};
+ \node[font=\scriptsize,anchor=west] at (axis cs:10,0.5){$0.92^{10}\approx0.43$};
+\end{axis}
+\end{tikzpicture}
+\caption{The bound $\gamma^h\|V-V^\star\|_\infty$ for $\gamma=0.92$, redrawn from the idea of slide 54 (values computed here).}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1790936669032.png}
+	\caption{Shrinking bound}\label{fig:1790936669032}
+\end{figure}
+\begin{intuition}
+Imagine a ``fake'' value function $V$ that satisfies the optimality equation and is not $V^\star$. Each time we expand the equation one step, the gap can be at most $\gamma$ times what it was; after $k$ steps it is at most $\gamma^k$ times the original gap, which melts away (with $\gamma=0.92$, $0.92^{56}<0.01$). The only way for the gap to survive all expansions is to be $0$. Slide 55 states the consequence: \emph{we can focus on one step at a time}, leaving the rest of the problem to $V(s')$, and any $V$ satisfying that one-step formula is in fact $V^\star$.
+\end{intuition}
+
+%=====================================================================
+\section{Summary}
+%=====================================================================
+\begin{center}
+\small
+\renewcommand{\arraystretch}{1.35}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{2.9cm}>{\raggedright\arraybackslash}p{6.3cm}>{\raggedright\arraybackslash}p{4.5cm}c@{}}
+\toprule
+\textbf{Object / result} & \textbf{Formula} & \textbf{What it tells us} & \textbf{Slides}\\
+\midrule
+Markov state & $p(s_{t+1}|s_t,a_t)=p(s_{t+1}|h_t,a_t)$ & the present summarises the past & 15--17\\
+MDP & $(\cS,\cA,p,r,\gamma)$ & sequential decisions with consequences & 18--29\\
+$V^\pi$, $Q^\pi$ & $\E[\sum_h\gamma^hr_{t+h}\mid\cdot]$ & how good a state / action is under $\pi$ & 30--31\\
+Finite values & $0\le V^\pi\le\Rmax/(1-\gamma)$ & why $\gamma<1$ & 32\\
+Bellman expectation & $V^\pi(s)=\E_a[r+\gamma\E_{s'}V^\pi(s')]$ & one-step consistency of a given policy & 33--36\\
+$d^\pi_{s_0}$ & $(1-\gamma)\sum_h\gamma^h\PP^\pi_h$ & discounted occupancy, a true distribution & 37--38\\
+Optimal $V^\star,Q^\star$ & $\sup_\pi V^\pi$, $\sup_\pi Q^\pi$ & a deterministic policy dominates all others & 39--40\\
+Bellman optimality & $V^\star(s)=\max_a[r+\gamma\E_{s'}V^\star(s')]$ & one-step lookahead with a $\max$ & 41--45\\
+Theorem 1 & $\hat\pi\in\argmax_aQ^\star\Rightarrow V^{\hat\pi}=V^\star$ & greedy w.r.t.\ $Q^\star$ is optimal & 46--49\\
+Theorem 2 & $V=\max_a[r+\gamma\E V]\Rightarrow V=V^\star$ & $V^\star$ is the unique solution & 50--55\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[>=Stealth,node distance=6mm and 10mm,
+  b/.style={draw,rounded corners=2pt,fill=blue!6,align=center,minimum height=1.0cm,text width=3.6cm,font=\small}]
+  \node[b](m){Markov state\\{\scriptsize future $\perp$ past $\mid$ present}};
+  \node[b,right=of m](d){MDP $(\cS,\cA,p,r,\gamma)$\\{\scriptsize policy $\pi$, discount}};
+  \node[b,right=of d](v){$V^\pi,\ Q^\pi$\\{\scriptsize bounded by $\Rmax/(1-\gamma)$}};
+  \node[b,below=of v](be){Bellman expectation\\{\scriptsize evaluates a given $\pi$}};
+  \node[b,left=of be](vs){$V^\star,\ Q^\star$\\{\scriptsize best value over policies}};
+  \node[b,left=of vs](bo){Bellman optimality\\{\scriptsize $\max$ instead of average}};
+  \node[b,below=of vs,text width=7cm](th){Theorem 1: greedy w.r.t.\ $Q^\star$ is optimal\\Theorem 2: the optimality equation has a unique solution};
+  \draw[->](m)--(d);\draw[->](d)--(v);\draw[->](v)--(be);\draw[->](be)--(vs);\draw[->](vs)--(bo);\draw[->](bo)|-(th);
+\end{tikzpicture}
+\caption{Roadmap of the lecture: from the Markov assumption to optimal policies.}
+\end{figure}
+
+\subsection*{Key take-aways}
+\begin{itemize}
+  \item An MDP is a contextual bandit whose next context depends on the action taken; the Markov property means the current state is all the agent needs to know.
+  \item The discount factor $\gamma<1$ keeps the value finite, with $0\le V^\pi\le\Rmax/(1-\gamma)$, and $1/(1-\gamma)$ is the effective horizon ($\gamma=0.99\Rightarrow{\sim}100$ steps).
+  \item Bellman equations turn an infinite-horizon sum into a one-step relation: value now $=$ reward $+$ discounted value of the next state (average for a policy, $\max$ for optimality).
+  \item Theorem 1: acting greedily with respect to $Q^\star$ is optimal, so a deterministic stationary policy always suffices.
+  \item Theorem 2: $V^\star$ is the \emph{only} solution of the Bellman optimality equation, thanks to the $\gamma$-contraction; any $V$ that satisfies the one-step formula is $V^\star$.
+\end{itemize}
+
+%=====================================================================
+\appendix
+\section{Appendix: supplementary material (in the companion PDF, not on the slides)}
+%=====================================================================
+The following results appear in the companion PDF but have no corresponding slide; they are \emph{not} part of the slide flow above.
+
+\subsection{Discounted sums as expectations under \texorpdfstring{$d^\pi_{s_0}$}{d}}\label{app:identity}
+\begin{lemma}[Second part of Lemma 5 of the PDF]
+For every bounded $f$,
+\[
+  \E^\pi\!\left[\sum_{h=0}^\infty\gamma^hf(s_h,a_h)\;\Big|\;s_0\right]=\frac1{1-\gamma}\,\E_{(s,a)\sim d^\pi_{s_0}}\big[f(s,a)\big].
+\]
+\end{lemma}
+\begin{proof}
+It is the same exchange of (absolutely convergent) sums used in the proof of Lemma~\ref{lem:dist}, applied to $f$: $\E^\pi[\sum_h\gamma^hf(s_h,a_h)\mid s_0]=\sum_h\gamma^h\sum_{s,a}\PP^\pi_h(s,a;s_0)f(s,a)=\frac1{1-\gamma}\sum_{s,a}d^\pi_{s_0}(s,a)f(s,a)$.
+\end{proof}
+\begin{intuition}
+Choosing $f=r$ gives $V^\pi(s_0)=\frac1{1-\gamma}\E_{(s,a)\sim d^\pi_{s_0}}[r(s,a)]$: the value is the average reward under the discounted occupancy, scaled by the effective horizon $1/(1-\gamma)$. For $\gamma=0.9$, if the average reward under $d^\pi$ is $0.5$, the value is $0.5/0.1=5$.
+\end{intuition}
+
+\subsection{Bellman operators (notation used in the PDF's proofs)}\label{app:ops}
+The proof of Theorem~\ref{thm:greedy} in the companion text uses two operators acting on bounded functions $V:\cS\to\mathbb R$:
+\begin{align*}
+  (\mathcal BV)(s)&=\max_a\Big[r(s,a)+\gamma\E_{s'\sim p(\cdot|s,a)}V(s')\Big],\\
+  (\mathcal B^{\pi}V)(s)&=r(s,\pi(s))+\gamma\E_{s'\sim p(\cdot|s,\pi(s))}V(s')\quad(\pi\text{ deterministic}).
+\end{align*}
+With this notation Theorem~\ref{thm:bellopt} reads $V^\star=\mathcal BV^\star$, Theorem~\ref{thm:bellexp} reads $V^\pi=\mathcal B^\pi V^\pi$, and Theorem~\ref{thm:unique} says that $\mathcal B$ has a unique fixed point. The slides never name these operators.
+
+\end{document}
