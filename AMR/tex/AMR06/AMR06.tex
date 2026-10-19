@@ -874,24 +874,81 @@ The parametrized-input planner turns monotonically from $0$ to $-\pi/2$ with $\w
 \end{figure}
 
 % =====================================================================
-\section{Choice of timing law \emph{(outline item)}}
-
-This item appears in the outline of the lecture; the slides provided end with the parking examples, so only the basic idea is
-given here (supplementary material, not taken from the slides).
-
+% =====================================================================
+\section{Choice of timing law \emph{(slides 28--30)}}
+ 
+\subsection{Choosing $s(t)$ \emph{(slide 28)}}
+ 
+Once a configuration-space path $\q(s)$, $s\in[s_i,s_f]$, has been generated, obtaining a trajectory requires choosing a
+\emph{timing law}
+\begin{equation}
+s=s(t),\qquad t\in[t_i,t_f],\qquad s(t_i)=s_i,\quad s(t_f)=s_f .
+\end{equation}
+Typically $t_f$ is \emph{not} assigned a priori: it results from the timing law itself. Two simple choices are
+\begin{itemize}[nosep]
+\item a \emph{constant} $\dot s$ over $[t_i,t_f]$, i.e., a \emph{linear} timing law;
+\item a \emph{trapezoidal} $\dot s$, i.e., a \emph{quadratic--linear--quadratic} timing law.
+\end{itemize}
+Whatever the choice, it must be \emph{feasible}: the resulting velocities must comply with the robot velocity bounds.
+ 
 Given a geometric path $\q(s)$ with inputs $\ut(s)$, any $s=s(t)$ with $\dot s>0$ yields an admissible trajectory with inputs
-$v(t)=\vt(s)\dot s$, $\omega(t)=\wt(s)\dot s$. Velocity bounds $|v|\le v_{\max}$, $|\omega|\le\omega_{\max}$ become
+$v(t)=\vt(s)\dot s$, $\omega(t)=\wt(s)\dot s$. For a unicycle with bounds $|v|\le v_{\max}$, $|\omega|\le\omega_{\max}$, feasibility means
 \[
-\dot s(t)\le\min\left\{\frac{v_{\max}}{|\vt(s)|},\ \frac{\omega_{\max}}{|\wt(s)|}\right\},
+\dot s(t)\le\min\left\{\frac{v_{\max}}{|\vt(s)|},\ \frac{\omega_{\max}}{|\wt(s)|}\right\}\qquad\text{for all } t .
 \]
-so the timing law can be chosen, for instance, as the fastest one compatible with these bounds, or as a smooth profile
-(e.g., cubic) satisfying boundary conditions on $s$ and $\dot s$.
-
+ 
 \begin{intuition}
-Slowing down scales \emph{both} inputs by the same factor, so the shape of the path never changes; it is the sharp parts of the
-path (large $|\wt|$) that force the robot to slow down.
+The trapezoidal $\dot s$ is the familiar ``accelerate, cruise, decelerate'' profile: $s(t)$ is a parabola, then a straight line, then a
+parabola, so the robot starts and stops without jumps in $\dot s$. The linear law is the cruise phase alone. Slowing down scales
+\emph{both} inputs by the same factor, so the shape of the path never changes; it is the sharp parts of the path (large $|\wt|$) that
+force the robot to slow down.
 \end{intuition}
-
+ 
+\subsection{Linear timing law for a unicycle with velocity bounds \emph{(slides 29--30)}}
+ 
+Consider a unicycle subject to bounds on the velocity inputs, and assume that a path $\q(s)$ has been generated, with geometric
+inputs $\vt(s)$ and $\wt(s)$. Choose the linear timing law
+\begin{equation}
+s=\frac{t}{k},\qquad t\in[0,t_f],\qquad t_f=k\,s_f ,
+\end{equation}
+(taking $s_i=0$). Since $\dot s=1/k$,
+\begin{equation}
+v(t)=\frac{\vt(s(t))}{k},\qquad \omega(t)=\frac{\wt(s(t))}{k}.
+\end{equation}
+ 
+\begin{proposition}[Feasible linear timing law]\label{prop:timing}
+Let
+\[
+\vt_{\mathrm{peak}}=\max_{s\in[s_i,s_f]}|\vt(s)|,\qquad \wt_{\mathrm{peak}}=\max_{s\in[s_i,s_f]}|\wt(s)| .
+\]
+The linear timing law is feasible if and only if $k\ge \max\{\vt_{\mathrm{peak}}/v_{\max},\,\wt_{\mathrm{peak}}/\omega_{\max}\}$, and
+the feasible choice with the shortest duration $t_f=ks_f$ is
+\begin{equation}
+k=\max\left\{\frac{\vt_{\mathrm{peak}}}{v_{\max}},\ \frac{\wt_{\mathrm{peak}}}{\omega_{\max}}\right\}.
+\end{equation}
+With this $k$, either $v$ or $\omega$ saturates at (at least) one instant of time.
+\end{proposition}
+\begin{proof}
+$|v(t)|\le v_{\max}$ for all $t$ is equivalent to $\max_s|\vt(s)|/k\le v_{\max}$, i.e., $k\ge\vt_{\mathrm{peak}}/v_{\max}$; likewise
+$|\omega(t)|\le\omega_{\max}$ for all $t$ is equivalent to $k\ge\wt_{\mathrm{peak}}/\omega_{\max}$. Both hold iff $k$ is at least the larger
+of the two ratios, and since $t_f=ks_f$ the smallest such $k$ gives the shortest duration. For that $k$ one of the two inequalities
+is an equality, so the corresponding input reaches its bound at the instant where $|\vt|$ or $|\wt|$ attains its peak. \qedhere
+\end{proof}
+ 
+\begin{example}[Worked numbers]
+Let $s_f=1$, $\vt_{\mathrm{peak}}=2$, $\wt_{\mathrm{peak}}=1.5$, $v_{\max}=0.5$, $\omega_{\max}=0.6$ (consistent units). Then
+$k=\max\{2/0.5,\ 1.5/0.6\}=\max\{4,\ 2.5\}=4$, so $t_f=4$; the peak linear velocity is $2/4=0.5=v_{\max}$ (saturated), while the
+peak angular velocity is $1.5/4=0.375<\omega_{\max}$.
+\end{example}
+ 
+\begin{intuition}
+Dividing both geometric inputs by the same $k$ is like playing the same film in slow motion: the path is unchanged and every
+velocity shrinks by the factor $1/k$. We slow down just enough so that the most demanding point of the path, in terms of
+$v$ or of $\omega$, exactly touches its bound. That is why one input saturates: slowing down any further would be feasible but wasteful.
+\end{intuition}
+ 
+More generally, any choice of a constant $k\ne1$ based on feasibility or optimality arguments can be seen as a \emph{uniform time
+scaling} with respect to the straightforward choice $s=t$ (which corresponds to $k=1$).
 % =====================================================================
 \section{Summary}
 
