@@ -1,0 +1,363 @@
+\documentclass[10pt, a4paper]{article}
+
+\usepackage[a4paper, margin=1.5cm]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage[english]{babel}
+\usepackage{microtype}
+\usepackage{amsmath, amssymb}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage[table]{xcolor}
+\usepackage{hyperref}
+
+\emergencystretch=2em
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcommand{\hr}{\vspace{0.8em}\hrule\vspace{0.8em}}
+
+\definecolor{primary}{HTML}{1E3A8A}
+\definecolor{secondary}{HTML}{0F766E}
+\definecolor{rowgray}{HTML}{F3F4F6}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=primary,
+    urlcolor=secondary
+}
+
+\setlist[itemize]{noitemsep, topsep=2pt, leftmargin=1.2em}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+
+\title{\textbf{\textcolor{primary}{Embodied AI --- Comprehensive Concept \& Quiz Fact Sheet}}\\\large Lectures 2--12: Core Intuitions, Trade-offs, Pipelines \& Key Equations}
+\author{A.Y. 2026/27 $\cdot$ High-Yield Review}
+\date{\vspace{-2ex}}
+
+\begin{document}
+\maketitle
+
+\section*{\textcolor{primary}{Lecture 2: 3D Representations}}
+\textbf{Core Concept:} In 2D, pixel grids are universal. In 3D, there is \emph{no single best representation}---each is a compromise between acquisition, memory, rendering speed, topology flexibility, and neural network compatibility.
+
+\begin{itemize}
+    \item \textbf{Manifold:} A space that locally resembles flat Euclidean space $\mathbb{R}^n$ (e.g., an ant on a sphere sees a flat 2D plane). A 2-manifold is a \textbf{surface}. Non-manifold mesh errors occur when an edge is shared by $>2$ faces or a vertex links two disconnected fans.
+    \item \textbf{2.5D Representations (Image-like):}
+    \begin{itemize}
+        \item \textbf{Depth Map ($D[x_s] \in \mathbb{R}^+$) \& Normal Map ($N[x_s] \in \mathbb{S}^2$):} Store distance along the optical axis (or surface normal) per pixel. Fast and CNN-friendly, but \textbf{incomplete} (only captures the first visible hit; blind to occluded geometry).
+        \item \textbf{Layered Depth Images (LDI):} Store a list of multiple hits along each ray to handle occlusion, but layers jump discontinuously across pixels.
+        \item \textbf{Multi-Plane Images (MPI):} Stack of fronto-parallel $(RGB, \alpha)$ planes at fixed depths; fast to render for small view shifts, poor resolution far away.
+    \end{itemize}
+    \item \textbf{Boundary / Surface Representations (Track the ``skin'', fix topology):}
+    \begin{itemize}
+        \item \textbf{Point Clouds ($\{x_i\}_{i=1}^N \in \mathbb{R}^{N \times 3}$):} Unordered set of 3D points. Networks \emph{must be permutation invariant} (use symmetric functions like $\max$, mean, sum; never flatten into an FC layer). \textbf{No explicit connectivity} (cannot tell a closed loop from a gapped loop without huge point density). \textbf{Surfels} add normals $n_i$ and radii to render as small flat disks.
+        \item \textbf{Triangle Meshes ($V \in \mathbb{R}^{N \times 3}, F \in \mathbb{Z}^{M \times 3}$):} Piecewise linear surfaces. Separate \textbf{geometry ($V$, float, differentiable)} from \textbf{topology ($F$, int, discrete/combinatorial)}. Gradient descent can move vertices $V$, but cannot easily change $F$ or change genus (e.g., torus $\leftrightarrow$ sphere).
+        \item \textbf{Mesh Properties:} Winding order $(a,b,c)$ sets the outward normal $n = (b-a) \times (c-a)$; swapping two indices flips the normal. For closed genus-0 meshes, Euler's formula ($V - E + F = 2$ with $E = 3F/2$) yields $F = 2V - 4 \approx 2V$. Ray-triangle intersection uses \textbf{barycentric coordinates} $p = \alpha a + \beta b + \gamma c$ ($\alpha+\beta+\gamma=1, \ge 0$), which also interpolate UV textures.
+        \item \textbf{Parametric Surfaces ($f(u) = x \in \mathbb{R}^3, u \in \mathcal{M} \subset \mathbb{R}^2$):} E.g., B\'ezier patches. \emph{Easy to sample/generate points} (plug in $u$), \emph{hard to test inside/outside or intersect rays}, and topology is locked to the domain $\mathcal{M}$.
+    \end{itemize}
+    \item \textbf{Volumetric Representations (Assign a value to every 3D point; allow arbitrary topology changes):}
+    \begin{itemize}
+        \item \textbf{Voxel Grids ($V[i,j,k] \in [0,1]$):} Fixed-size 3D arrays compatible with 3D CNNs and arbitrary topology. \textbf{Flaw:} Memory grows cubically as $\mathcal{O}(n^3)$ while the surface only occupies $\mathcal{O}(n^2)$ cells (pays for empty air). \textbf{Octrees} subdivide adaptively near boundaries, saving memory at the cost of irregular tree structures.
+        \item \textbf{Implicit Surfaces ($\mathcal{S} = \{x \in \mathbb{R}^3 \mid f(x) = 0\}$):} Convention: $f(x)<0$ inside, $f(x)>0$ outside. \textbf{Mantra: Parametric generates, Implicit tests.} For $f$ to define a valid surface, it must change sign across $\mathcal{S}$ and have $\nabla f \neq 0$ on $\mathcal{S}$.
+        \item \textbf{Implicit Perks:}
+        1) \textbf{Normals for free:} $n(x) = \nabla f(x) / \|\nabla f(x)\|$ via autodiff.
+        2) \textbf{CSG Boolean operations:} Union $A \cup B \Rightarrow \min(f_A, f_B)$; Intersection $A \cap B \Rightarrow \max(f_A, f_B)$; Subtraction $A \setminus B \Rightarrow \max(f_A, -f_B)$.
+        \item \textbf{Signed Distance Function (SDF):} An implicit field where $|f(x)|$ is the exact Euclidean distance to the closest surface point. Satisfies the \textbf{Eikonal equation} $\|\nabla f(x)\| = 1$. Enables \textbf{Sphere Tracing}: stepping along a ray by $t \leftarrow t + f(o+td)$ is guaranteed never to overshoot the surface because the ball of radius $|f(x)|$ is empty. Stored on grids (\textbf{TSDF} truncates to $[-\tau, +\tau]$ near surfaces) or in MLPs.
+        \item \textbf{Marching Cubes:} Converts an implicit field to a triangle mesh by evaluating $f$ on a grid, finding edges where corners have opposite signs, and linearly interpolating vertex crossings $t = \frac{f(a)}{f(a)-f(b)}$.
+        \item \textbf{Density Fields ($\sigma(x) \ge 0$):} Represent absorption per unit length for semi-transparent media (smoke, CT scans, NeRF, 3D Gaussians) with no hard surface boundary.
+    \end{itemize}
+\end{itemize}
+
+\begin{table}[h!]
+\centering
+\small
+\rowcolors{2}{rowgray}{white}
+\begin{tabularx}{\textwidth}{l Y Y Y Y Y}
+\toprule
+\textbf{Representation} & \textbf{Sample Points} & \textbf{Inside/Outside} & \textbf{Change Topology} & \textbf{Direct Render} & \textbf{Memory Scaling} \\
+\midrule
+Point Cloud & Given & Hard (no surface) & Any point set & Splats & $\mathcal{O}(N)$ points \\
+Triangle Mesh & Easy (barycentric) & Ray crossings & Hard (fixed $F$) & Fast GPU raster & $\mathcal{O}(V + F)$ \\
+Parametric $f(u)$ & Easy (plug in $u$) & Hard (invert $f$) & Locked to $\mathcal{M}$ & Convert to mesh & Control points \\
+Voxel Grid & Marching cubes & Easy (cell lookup) & Easy (any) & Blocky / march & $\mathcal{O}(n^3)$ (wasteful) \\
+Implicit / SDF & Hard (March. cubes) & Trivial ($\text{sign}(f)$) & Easy (continuous) & Sphere tracing & Grid $\mathcal{O}(n^3)$ or MLP \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\hr
+\section*{\textcolor{primary}{Lecture 3: Depth Measurement, Priors \& Diffusion (Marigold)}}
+\textbf{Core Concept:} Pinhole projection $p^c = z K^{-1}\tilde{x}_s$ destroys distance $z$. A single image leaves global scale unobservable (a small near object looks identical to a large far object). Every depth method must \textbf{pay with a currency}: \emph{Time}, \emph{Baseline}, \emph{Computation/Motion}, or a \emph{Learned Prior}.
+
+\begin{itemize}
+    \item \textbf{The Ambiguity Ladder (Free Parameters):}
+    \begin{itemize}
+        \item \textbf{Metric Depth (0 free params):} True meters (from LiDAR or calibrated stereo).
+        \item \textbf{Up to Scale (1 free param, $s$):} $\hat{D} \approx s D^*$. Shape is preserved (similarity transform). Produced by monocular SfM or Eigen's log-space loss. Pinned down by 1 known length.
+        \item \textbf{Affine-Invariant Depth/Disparity (2 free params, $s, t$):} $\hat{q} \approx s q^* + t$. Pinned down by 2 known depths.
+        \item \textbf{Ordinal (monotone map):} Only relative front/back ordering is known.
+    \end{itemize}
+    \item \textbf{Physical Measurement Principles \& Error Laws:}
+    \begin{itemize}
+        \item \textbf{Time of Flight (ToF / LiDAR):} Active only (needs known departure time). Measures round-trip delay $r = \frac{ct}{2}$. Timing error floor $\delta r = \frac{c\delta t}{2}$ is \textbf{independent of range} ($1\text{ ns} \approx 15\text{ cm}$). \textbf{Flaws:} Structured sparsity (vertical scan-line gap grows linearly with range $s(r) \approx r\Delta\theta_{\text{el}}$, missing distant pedestrians), missing returns $\neq$ zero depth, and ``flying points'' at silhouettes where one beam straddles foreground and background.
+        \item \textbf{Projecting LiDAR to Depth Image:} Transform via extrinsics $p^c = R_{cl}p^l + t_{cl}$, project $\tilde{x}_s = \pi(Kp^c)$, use a z-buffer (keep smallest $p_z^c > 0$). Note: Depth map records camera z-axis $z = r\cos\theta$, \emph{not} radial range $r = \|p^c\|$.
+        \item \textbf{Triangulation (Stereo):} $z = \frac{fb}{d}$ where baseline $b$ provides metric scale. Depth error grows \textbf{quadratically with depth}: $\delta z \approx \frac{z^2}{fb}\delta d$. (LiDAR is precise at long range but sparse; stereo is dense at short range but degrades quadratically).
+    \end{itemize}
+    \item \textbf{Closed-Form Monocular Cues \& Network Shortcuts:}
+    \begin{itemize}
+        \item \textbf{Vanishing Points:} $\lambda v = K R d$ (depends only on rotation/pitch/roll, independent of translation).
+        \item \textbf{Apparent Size:} $z = \frac{fH}{h}$ (requires knowing real object height $H$).
+        \item \textbf{Vertical Ground Contact Position:} $z = \frac{fY}{y_s - y_h}$ (requires flat ground, camera height $Y$, and horizon row $y_h$; error grows as $z^2$).
+        \item \textbf{What Networks Actually Use (Probes):}
+        1) \emph{Pasted-Car Experiment:} Networks rely on \textbf{vertical image position} over apparent size.
+        2) \emph{Pitch/Roll Crops:} Networks read raw pixel row rather than true distance to the horizon.
+        3) \emph{Camera Focal Length Bias:} Networks memorize training focal length $f_0$, predicting $\hat{z} = \frac{f_0}{f}z$ on test camera $f$.
+        4) \emph{Anamorphic Street Art:} Flat pavement painted like a hole fools single-image networks with zero uncertainty warning.
+    \end{itemize}
+    \item \textbf{Supervised \& Self-Supervised Single-View Depth:}
+    \begin{itemize}
+        \item \textbf{Eigen Scale-Invariant Loss:} Log-MSE minus the per-image mean offset $\alpha = \frac{1}{n}\sum (\log y_i^* - \log y_i)$, which equals the variance $\text{Var}(d_i)$ of log-differences. Invariant to global scaling $y \mapsto sy$.
+        \item \textbf{Affine Invariance in Disparity vs. Depth:}
+        In disparity ($\frac{1}{z} \mapsto \frac{s}{z} + t \iff z \mapsto \frac{z}{s+tz}$), back-projecting yields a projective map $\hat{p} = \frac{p}{s+tp_z}$ that \textbf{keeps planes flat} (tilts them without bending).
+        In depth ($\hat{z} = sz+t$), back-projecting gives $\hat{p} = (s + \frac{t}{z})p$: scale $s$ preserves shape, but \textbf{shift $t$ distorts/bends 3D shapes} because rays fan out.
+        \item \textbf{MiDaS:} Mixes heterogeneous datasets (metric, SfM, stereo movies) by predicting in \textbf{affine-invariant disparity space}, aligning each training image via closed-form least squares $(s,t)$ before computing loss + multi-scale gradient loss.
+        \item \textbf{Depth Anything V2:} Trains a large teacher on exact synthetic data (sharp edges, no sensor holes), uses the teacher to pseudo-label millions of unlabeled real images, and trains a student on those pseudo-labels.
+        \item \textbf{Self-Supervised Stereo:} Trains without depth labels using photometric warp loss $\mathcal{L}_{\text{photo}} = \|\tilde{I}_L - I_L\|$ via \textbf{backward warping} $\tilde{I}_L(u,v) = I_R(u - d(u,v), v)$ (avoids holes/collisions of forward warping). \textbf{Blind spots:} Textureless regions (image gradient $I_R' = 0 \Rightarrow \frac{\partial \mathcal{L}}{\partial d} = 0$) and occlusions.
+    \end{itemize}
+    \item \textbf{Diffusion Priors, Marigold \& Marigold-DC:}
+    \begin{itemize}
+        \item \textbf{Regression vs. Generative:} MSE regression outputs the conditional mean $\mathbb{E}[Y|x]$, which averages foreground and background at depth edges (creating blurry flying pixels). Diffusion samples a sharp mode from $p(D|I)$.
+        \item \textbf{Denoiser as a Prior:} Trained on $L_{\text{simple}} = \mathbb{E}\|\epsilon_\theta(x_0 + \sigma\epsilon, \sigma) - \epsilon\|^2$. The ideal denoiser satisfies $\sigma\epsilon^*(x, \sigma) = \nabla_x D_\sigma(x)$ (the gradient of the \textbf{smoothed distance function} to the data manifold): at small $\sigma$ it points to the nearest data point; at large $\sigma$ to the dataset center.
+        \item \textbf{DDIM Step:} $x_{t-1} = x_t + (\sigma_{t-1} - \sigma_t)\epsilon_\theta(x_t, \sigma_t)$, walking toward the clean Tweedie preview $\hat{x}_0^t = x_t - \sigma_t\epsilon_\theta(x_t, \sigma_t)$.
+        \item \textbf{Marigold:} Repurposes pretrained \textbf{Stable Diffusion}: freezes the VAE, encodes image $z^{(I)}$ and percentile-normalized depth $\tilde{D} \in [-1,1]$ into latent space, concatenates $[z_\sigma^{(D)}, z^{(I)}]$ (doubling first U-Net layer channels and halving weights), and fine-tunes on 74K synthetic pairs. At test time, ensembles $N=10$ runs (50 steps each $= 500$ evals) by mutually aligning scale/shift and taking the pixel median. \textbf{Output:} Affine-invariant depth (2 free params, slow).
+        \item \textbf{Marigold-DC (Depth Completion via Test-Time Guidance):} Upgrades sparse metric LiDAR measurements $c$ to a dense metric depth map \textbf{with zero retraining}. Inside the 50-step DDIM loop, decodes the Tweedie preview $\hat{z}_0^t$, applies learnable scale/shift $\hat{d}_t^{(m)} = \hat{a}\mathcal{D}(\hat{z}_0^t) + \hat{b}$, computes error against sparse LiDAR pixels, and takes a gradient descent step on $(z_t, \hat{a}, \hat{b})$ while keeping U-Net/VAE weights frozen.
+    \end{itemize}
+\end{itemize}
+
+\hr
+\section*{\textcolor{primary}{Lecture 4: Stereo Depth Estimation (Classical to Uncalibrated 3D)}}
+\textbf{Core Concept:} Calibration and rectification turn 2D correspondence search into a 1D horizontal scanline search. Modern 3D pointmap networks (DUSt3R/MASt3R) drop calibration and rectification entirely by matching in 3D space.
+
+\begin{itemize}
+    \item \textbf{Classical Stereo Pipeline:} 1) Calibrate $\rightarrow$ 2) Rectify $\rightarrow$ 3) Compute disparity $\rightarrow$ 4) Left-Right consistency outlier filter $\rightarrow$ 5) Triangulate $z = fb/d$ $\rightarrow$ 6) Fuse 3D model.
+    \item \textbf{Image Rectification:} Applies a pure rotation $R_{\text{rect}}$ about each camera center so both image planes become coplanar and parallel to the baseline $b$. Epipoles move to infinity along the horizontal axis, and the epipolar constraint reduces to $y_1 = y_2$ (1D search along the same row). \textbf{Fails} under forward motion (epipole lands inside the image).
+    \item \textbf{Block Matching \& Failure Modes:}
+    \begin{itemize}
+        \item \textbf{Metrics:} \textbf{SSD} $\|w_L - w_R\|_2^2$ (sensitive to exposure); \textbf{ZNCC} $\frac{(w_L-\mu_L)^\top(w_R-\mu_R)}{\|w_L-\mu_L\|\|w_R-\mu_R\|}$ (invariant to linear gain and bias $a w + b$).
+        \item \textbf{Window Size Trade-off:} Small windows $\rightarrow$ noisy, ambiguous matches. Large windows $\rightarrow$ smooth, but violate the fronto-parallel assumption on slanted surfaces and cause \textbf{border bleeding} (foreground edges fatten over weakly textured backgrounds).
+        \item \textbf{Half-Occlusions:} A strip of background of width $d_f - d_b$ immediately to the left of a foreground object in the left image is hidden in the right image. Caught by the \textbf{Left-Right Consistency Check}: $|d_L(x,y) - d_R(x - d_L(x,y), y)| \le \tau$.
+    \end{itemize}
+    \item \textbf{Learned Stereo Evolution:}
+    \begin{itemize}
+        \item \textbf{Siamese Networks (Zbontar \& LeCun):} Patch-level CNN trained on triplets (anchor, positive within $\pm 1\text{ px}$, hard negative $3\text{--}6\text{ px}$ away) using \textbf{Hinge Loss} $\max(0, m + s_- - s_+)$. \emph{Cosine-similarity head} (dot product of normalized features) is much faster than an MLP similarity head.
+        \item \textbf{DispNet:} End-to-end 2D encoder-decoder with a 1D correlation layer; pretrained on synthetic data (FlyingThings3D).
+        \item \textbf{GC-Net:} Builds a 4D cost volume ($H \times W \times D \times F$), regularizes with 3D convolutions, and extracts sub-pixel disparity via differentiable \textbf{Soft Argmin}: $\hat{d} = \sum_{d=0}^{d_{\max}} d \cdot \text{softmax}(-c_\theta(d))$. \textbf{Flaw:} High 3D memory cost, and bimodal cost curves at occlusion edges average out to flying pixels between modes.
+    \end{itemize}
+    \item \textbf{Stereo Without Calibration: DUSt3R \& MASt3R:}
+    \begin{itemize}
+        \item \textbf{Pointmap ($X^{a,1} \in \mathbb{R}^{H \times W \times 3}$):} Assigns every pixel of image $a \in \{1,2\}$ its 3D coordinate \textbf{expressed in camera 1's coordinate frame}. Two pixels correspond iff their 3D coordinates coincide.
+        \item \textbf{Architecture:} Shared ViT-Large Siamese encoder $\rightarrow$ twin ViT-Base decoders coupled via \textbf{cross-attention} $\rightarrow$ regression heads outputting pointmaps $\hat{X}^{a,1}$ and confidence maps $C^a$.
+        \item \textbf{Confidence-Weighted Loss:} $\mathcal{L}_{\text{conf}} = \sum C^a[i] \left\|\frac{1}{\hat{\rho}}\hat{X}^{a,1}[i] - \frac{1}{\rho}X^{a,1}[i]\right\| - \alpha \log C^a[i]$. Dividing by mean distances $\rho, \hat{\rho}$ normalizes unknown scale; the $-\alpha\log C$ penalty prevents the network from cheating by setting $C \to 0$ everywhere (optimal confidence is $C^* = \alpha / \ell_{\text{regr}}$).
+        \item \textbf{MASt3R Additions:} Because regressed 3D points are robust to huge viewpoint changes but locally imprecise, MASt3R adds a \textbf{local descriptor head} ($F^a \in \mathbb{R}^{H \times W \times 24}$) trained with \textbf{InfoNCE loss} (a smooth multi-class generalization of hinge loss) and extracts matches via 2D \textbf{reciprocal nearest neighbors} (mutual NN across the whole image).
+        \item \textbf{Trade-off vs. Classical Stereo:} Handles uncalibrated cameras, wide baselines, and forward motion, but sacrifices measured metric scale (scale comes from a learned prior), high image resolution, and low compute.
+    \end{itemize}
+\end{itemize}
+
+\hr
+\section*{\textcolor{primary}{Lecture 5: Structure-from-Motion (Classical COLMAP vs. Feed-Forward VGGT)}}
+\textbf{Core Concept:} Classical SfM alternates feature matching, minimal geometric solvers inside RANSAC, and sparse nonlinear Bundle Adjustment (BA). Feed-forward transformers (VGGT) predict cameras, depth, pointmaps, and tracks for dozens of views in one pass ($<1\text{ s}$), providing an ideal initialization for BA.
+
+\begin{itemize}
+    \item \textbf{Camera Calibration (Zhang's Method):} Captures a flat checkerboard ($Z=0$) in multiple poses. Each view defines a plane-to-image homography $H = \lambda K [r_1\; r_2\; t]$. Orthonormality of rotation columns ($r_1^\top r_2 = 0, \|r_1\|=\|r_2\|$) yields 2 linear constraints per view on $B = K^{-\top}K^{-1}$ (5 DoF $\Rightarrow \ge 3$ tilted views needed), solved via SVD and refined jointly with lens distortion via nonlinear least squares (reprojection error).
+    \item \textbf{Feature Detection \& Matching:}
+    \begin{itemize}
+        \item \textbf{SIFT:} Detects scale-space extrema in \textbf{Difference of Gaussians (DoG)} (approximates $\sigma^2\nabla^2 G$ for scale invariance), rotates patch to dominant gradient orientation (rotation invariance), and pools $4\times 4$ cells of 8-bin gradient histograms into a \textbf{128D vector}. Filtered via \textbf{Lowe's Ratio Test}: $\frac{\|f - f'_{(1)}\|}{\|f - f'_{(2)}\|} < 0.8$ (rejects ambiguous repetitive patterns).
+        \item \textbf{SuperPoint:} Self-supervised CNN with shared encoder ($8\times$ downsampling) and two heads: keypoint head ($H/8 \times W/8 \times 65$: 64 pixel bins + 1 dustbin, softmax) and descriptor head ($256\text{D}$). Trained via 1) MagicPoint on synthetic shapes $\rightarrow$ 2) \textbf{Homographic Adaptation} (averages detections across $N_h=100$ random homography warps of real images to enforce covariance) $\rightarrow$ 3) joint training on warped pairs. SIFT still wins at finest sub-pixel localization ($\varepsilon=1$); SuperPoint wins on descriptor mAP and speed ($\sim 70\text{ fps}$).
+    \end{itemize}
+    \item \textbf{Two-Frame SfM \& Epipolar Geometry:}
+    \begin{itemize}
+        \item \textbf{Essential Matrix ($E = [t]_\times R$):} Operates on calibrated rays $\tilde{x}_i = K_i^{-1}\bar{x}_i$ via $\tilde{x}_2^\top E \tilde{x}_1 = 0$. Has \textbf{rank 2}, \textbf{5 DoF} (3 rot + 3 trans $-$ 1 scale), and singular values $(\sigma, \sigma, 0)$. Estimated via the \textbf{normalized 8-point algorithm} (SVD + projecting singular values to $(1,1,0)$) or minimal \textbf{5-point solver} inside RANSAC.
+        \item \textbf{4-Fold Decomposition \& Cheirality:} Decomposing $E = U\operatorname{diag}(1,1,0)V^\top$ yields 4 pose candidates: $(U W V^\top$ or $U W^\top V^\top)$ and $t = \pm u_3$ (baseline sign flip + $180^\circ$ twisted pair rotation). Only \textbf{1 solution} puts triangulated points in front of \emph{both} cameras ($z_1 > 0, z_2 > 0$, \textbf{cheirality check}).
+        \item \textbf{Fundamental Matrix ($F = K_2^{-\top} E K_1^{-1}$):} Used when intrinsics $K_i$ are unknown ($\bar{x}_2^\top F \bar{x}_1 = 0$); rank 2, \textbf{7 DoF}.
+        \item \textbf{Triangulation \& Parallax Trade-off:} Linear DLT ($\bar{x}_i \times P_i \tilde{x}_w = 0$) or nonlinear reprojection minimization. \textbf{Trade-off:} Small baseline/parallax angle $\gamma$ makes feature matching easy, but rays are nearly parallel so depth uncertainty explodes ($\sigma_Z \propto 1/\gamma$); wide baseline gives accurate triangulation but hard matching.
+    \end{itemize}
+    \item \textbf{Bundle Adjustment (BA) \& Incremental SfM (COLMAP):}
+    \begin{itemize}
+        \item \textbf{Formulation:} Jointly minimizes reprojection error $\sum_{i,p} w_{ip} \|x_{ip}^s - \pi(K_i(R_i x_p^w + t_i))\|_2^2$ over all camera poses $T_i \in SE(3)$ and 3D points $x_p^w \in \mathbb{R}^3$.
+        \item \textbf{Gauge Freedom (7 DoF):} The cost is invariant to global rigid motion (6 DoF) and global scale (1 DoF), giving the Hessian a 7D null space (fixed by anchoring $T_1 = I$ and $\|t_2\|=1$).
+        \item \textbf{Lie Algebra Updates:} Rotations are not a vector space; poses are updated in the tangent space $\mathfrak{se}(3) \cong \mathbb{R}^6$ via the exponential map $T_i \leftarrow \text{Exp}(\Delta\xi_i) T_i$.
+        \item \textbf{Schur Complement Trick:} In the Gauss-Newton normal equations $H\Delta s = -b$, points never talk directly to other points, so $H_{xx}$ is block-diagonal ($3\times 3$ blocks). Eliminating points yields the \textbf{reduced camera system} $(H_{\xi\xi} - H_{\xi x}H_{xx}^{-1}H_{x\xi})\Delta\xi = -(b_\xi - H_{\xi x}H_{xx}^{-1}b_x)$ of size $6N$ instead of $6N + 3P$ ($\sim 10^8\times$ speedup).
+        \item \textbf{Incremental SfM Loop:} Seed with a wide-baseline two-view reconstruction $\rightarrow$ register next image via \textbf{PnP / P3P} (2D-to-3D matches) $\rightarrow$ triangulate new points $\rightarrow$ run local BA (and periodic global BA) + filter outliers. \textbf{Flaw:} Slow, sequential error accumulation/drift, fails on low overlap or textureless scenes. (GLOMAP is a non-learned global alternative).
+    \end{itemize}
+    \item \textbf{Feed-Forward SfM: VGGT (Visual Geometry Grounded Transformer):}
+    \begin{itemize}
+        \item \textbf{Input/Output:} Takes $N$ uncalibrated images; outputs per-image camera parameters $\hat{g}_i \in \mathbb{R}^9$ (quaternion, translation, FoV), dense depth $\hat{D}_i$, world-frame pointmaps $\hat{X}_i$ (in camera 1's frame), and tracking features $F_i$ \textbf{in one forward pass ($<0.2\text{ s}$)}.
+        \item \textbf{Architecture:} DINO patch tokens + 1 learned \textbf{camera token} per image $\rightarrow$ $L=24$ layers of \textbf{Alternating Attention} (alternating \emph{Global Attention} across all tokens of all $N$ images with $N\times$ cheaper \emph{Frame Attention} within each single image) $\rightarrow$ Camera head + DPT dense head + CoTracker2 tracking head.
+        \item \textbf{Redundancy \& BA Synergy:} Predicting redundant outputs (depth + cameras + pointmaps) improves accuracy. Using VGGT predictions to initialize classical Bundle Adjustment eliminates incremental initialization and boosts pose accuracy from $85.3 \to 93.5$ AUC@30 in $\sim 1.8\text{ s}$.
+    \end{itemize}
+\end{itemize}
+
+\hr
+\section*{\textcolor{primary}{Lecture 6: Visual SLAM (Filtering, Factor Graphs, ORB-SLAM \& Active SLAM)}}
+\textbf{Core Concept:} SLAM is joint estimation of trajectory and map in real time, with loop closure to eliminate dead-reckoning drift ($\sigma\sqrt{t}$). Modern SLAM drops dense EKF filtering in favor of sparse keyframe factor graphs.
+
+\begin{itemize}
+    \item \textbf{Filtering (Online SLAM: $p(x_t, m \mid z_{1:t}, u_{1:t})$) vs. Graph-Based (Full SLAM: $p(x_{1:t}, m \mid z_{1:t}, u_{1:t})$):}
+    \begin{itemize}
+        \item \textbf{Bayes Filter / EKF-SLAM (MonoSLAM):} Maintains a single joint Gaussian $\mathcal{N}(\mu, \Sigma)$ over the current camera state (13D) and $N$ 3D landmarks ($3N$). Prediction touches only camera blocks, but the \textbf{Kalman update touches the entire covariance matrix}: $\mathcal{O}(N^2)$ time and memory per frame, limiting maps to $\sim 100$ points at 30 Hz.
+        \item \textbf{Why Marginalizing Past Poses Hurts:} Marginalizing out a past pose $x_k$ via the Schur complement connects every landmark seen by $x_k$ to every other landmark it saw (\textbf{fill-in}, turning a sparse star into a dense clique). Also, EKF linearizes Jacobians only once, risking divergence.
+        \item \textbf{Factor Graphs \& Pose Graphs:} Keep keyframe poses in the state! Variable nodes (poses, points) connect to factor nodes (priors, odometry, reprojection, loop closures). Maximizing the posterior product of Gaussian factors equals \textbf{nonlinear least squares}: $\min \sum_k e_k^\top \Omega_k e_k$, where $\Omega_k = \Sigma_k^{-1}$ is the information matrix.
+        \item \textbf{Sparsity of $H$:} In Gauss-Newton/Levenberg-Marquardt ($H\Delta x = -b$), block $H_{ij}$ is non-zero \textbf{if and only if an edge links variables $i$ and $j$} (graph adjacency matrix). Keeping keyframes keeps $H$ sparse!
+    \end{itemize}
+    \item \textbf{The ORB-SLAM Pipeline (3 Parallel Threads):}
+    \begin{itemize}
+        \item \textbf{Features:} Uses multi-scale \textbf{ORB} (oriented FAST corners + binary descriptors) matched via fast bitwise XOR \textbf{Hamming distance} ($<33\text{ ms}$, unlike SIFT).
+        \item \textbf{Map Initialization:} Runs RANSAC in parallel for a \textbf{Homography $H_{21}$} (planar/low-parallax) and \textbf{Fundamental matrix $F_{21}$} (general scene); picks $H$ if $S_H/(S_H+S_F) > 0.45$, and waits to initialize until sufficient parallax exists.
+        \item \textbf{Thread 1 --- Tracking (every frame, real-time):} Predicts pose via constant-velocity model, projects local map points from covisible keyframes, and runs \textbf{motion-only BA} (optimizing only the 6-DoF current pose with Huber loss). Inserts keyframes generously.
+        \item \textbf{Thread 2 --- Local Mapping (per keyframe):} Updates the \textbf{Covisibility Graph} (edges between keyframes sharing $\ge 15$ points), triangulates new points, runs \textbf{Local BA} on the covisible neighborhood (keeping outer keyframes fixed), and culls redundant keyframes (where $\ge 90\%$ of points are seen by $\ge 3$ other keyframes).
+        \item \textbf{Thread 3 --- Loop Closing \& Relocalization:} Queries a hierarchical \textbf{Bag of Binary Words (DBoW2)} vocabulary tree ($k$ branches, $L$ levels $\Rightarrow k^L$ words in only $kL$ comparisons) with an \textbf{inverted index}. Because monocular SLAM has \textbf{7-DoF drift} (rotation, translation, \emph{and scale}), loop correction optimizes the Essential Graph over \textbf{$\text{Sim}(3)$ similarity transforms} ($e_{ij} = \log(Z_{ij}^{-1} S_i S_j^{-1})^\vee \in \mathbb{R}^7$) rather than $SE(3)$.
+    \end{itemize}
+    \item \textbf{Advanced SLAM Directions:}
+    \begin{itemize}
+        \item \textbf{Rolling-Shutter / Continuous-Time SLAM:} Rolling-shutter cameras expose each scanline at a different timestamp, skewing images under motion. Representing the trajectory as a continuous \textbf{cumulative cubic B-spline on $SE(3)$} lets every scanline (or IMU reading) query its exact timestamp $t$, cutting loop error by $8\times$.
+        \item \textbf{Active SLAM \& FisherRF:} Balances \textbf{exploration} (new frontiers) vs. \textbf{exploitation} (revisiting known areas to close loops and shrink covariance). Minimizes uncertainty volume via \textbf{D-optimality} $\det(\Sigma)^{1/n}$. In radiance fields (\textbf{FisherRF}), selects the next view $x$ maximizing expected information gain $\text{IG}(x) \le \frac{1}{2}\text{tr}(I_x I_{\mathcal{D}}^{-1})$ using the diagonal Fisher matrix $I_x = J_x^\top J_x$ (evaluated without needing a ground-truth image).
+        \item \textbf{Learned Front Ends:} \textbf{MASt3R-SLAM} uses $\text{Sim}(3)$ pose graphs; \textbf{VGGT-SLAM} aligns uncalibrated submaps using \textbf{$SL(4)$ projective homographies (15 DoF)}.
+    \end{itemize}
+\end{itemize}
+
+\hr
+\section*{\textcolor{primary}{Lectures 7 \& 8: Volume Rendering, NeRF, Plenoxels \& Instant-NGP}}
+\textbf{Core Concept:} Drop the hard-surface assumption and model the scene as a continuous field of density $\sigma(x)$ and view-dependent emitted radiance $c(x, \omega)$, trained via differentiable ray marching against posed 2D images.
+
+\begin{itemize}
+    \item \textbf{Radiative Transfer vs. Emission-Absorption (EA) Model (Lecture 7):}
+    \begin{itemize}
+        \item \textbf{4 Physical Interactions:} Loss from \textbf{Absorption} ($-\sigma_a L$) and \textbf{Out-scattering} ($-\sigma_s L$); Gain from \textbf{Emission} ($+\sigma_a L_e$) and \textbf{In-scattering} ($+\sigma_s L_s$, which integrates incoming light over the whole sphere of directions recursively).
+        \item \textbf{Why NeRF Drops Scattering:} In-scattering is recursive and expensive. By allowing an arbitrary view-dependent effective emission $L_e'(x, \omega) = L_e + \frac{\sigma_s}{\sigma_a}(L_s - L)$, the \textbf{Emission-Absorption (EA) model} $dL = -\sigma(x)L\,dz + \sigma(x)L_e(x,\omega)\,dz$ can bake scattered/reflected appearance directly into $L_e(x,\omega)$ (at the cost of not being physically relightable).
+        \item \textbf{Transmittance \& Continuous Volume Rendering Integral:}
+        $$T(x, x_t) = \exp\!\left(-\int_0^t \sigma(x - s\omega)\,ds\right), \qquad L(x, \omega) = \int_0^z T(x, x_t)\,\sigma(x_t)\,L_e(x_t, \omega)\,dt + T(x, x_z)L_{\text{bg}}$$
+        Transmittance is symmetric ($T(x,y)=T(y,x)$) and multiplicative ($T(x,y)=T(x,z)T(z,y)$).
+        \item \textbf{Computational Ray Marching (Alpha Compositing):} Discretize the ray into $N$ homogeneous segments of length $\Delta t_i$:
+        $$L(x,\omega) \approx \sum_{i=1}^N w_i c_i + T_{N+1} L_{\text{bg}}, \qquad w_i = T_i \alpha_i, \qquad \alpha_i = 1 - e^{-\sigma_i \Delta t_i}, \qquad T_i = \prod_{j<i}(1 - \alpha_j)$$
+        Because $w_i = T_i - T_{i+1}$, the weights telescope: $\sum_{i=1}^N w_i + T_{N+1} = 1$ (a partition of unity; $T_{N+1}$ is the background mask).
+    \end{itemize}
+    \item \textbf{Neural Radiance Fields (NeRF, Lecture 8):}
+    \begin{itemize}
+        \item \textbf{Architecture Inductive Bias:} An MLP $f_\theta: (\gamma(x), \gamma(\omega)) \mapsto (\sigma, c)$. Position $x$ enters at layer 1 to output density $\sigma(x)$; viewing direction $\omega$ is injected \textbf{only in the final head layers} so that \textbf{geometry $\sigma(x)$ is strictly view-independent} while color $c(x,\omega)$ captures view-dependent specularities.
+        \item \textbf{Positional Encoding (Overcoming Spectral Bias):} Standard ReLU MLPs are biased toward low-frequency smooth functions, producing blurry renders. Lifting inputs via $\gamma(v) = [\sin(2^k\pi v), \cos(2^k\pi v)]_{k=0}^{L-1}$ ($L=10$ for $x$, $L=4$ for $\omega$) induces a tunable high-frequency stationary kernel $\langle\gamma(v), \gamma(v')\rangle = \sum \cos(2^k(v-v'))$ so nearby points can take sharp, distinct values.
+        \item \textbf{Hierarchical (Coarse-to-Fine) Sampling:} Uniform sampling wastes MLP evaluations in empty air or occluded regions. A \textbf{coarse pass} evaluates $N_c=64$ uniform samples, normalizes the rendering weights $\hat{w}_i = w_i / \sum w_j$ into a piecewise-constant PDF along the ray, and uses \textbf{inverse-CDF transform sampling} to concentrate $N_f=128$ \textbf{fine samples} right around visible surfaces where $w_i$ peaks.
+        \item \textbf{Inverse-Depth / NDC Sampling:} For unbounded forward-facing scenes, sampling linearly in $1/z$ (or mapping the frustum to Normalized Device Coordinates $[-1,1]^3$) allocates high resolution to close objects (large parallax) and coarse resolution to distant backgrounds.
+        \item \textbf{Anti-Aliasing (mip-NeRF):} Casting a single 1D ray per pixel aliases when camera distance or resolution changes. \textbf{mip-NeRF} casts a 3D \textbf{conical frustum}, approximates each frustum slice with a 3D Gaussian $\mathcal{N}(\mu, \Sigma)$, and feeds the \textbf{Integrated Positional Encoding (IPE)} $\mathbb{E}[\sin(2^k X)] = \sin(2^k\mu)\exp(-\frac{1}{2}4^k s^2)$, which automatically damps high frequencies whose wavelength is smaller than the pixel footprint $s$.
+    \end{itemize}
+    \item \textbf{Trading MLP Compute for Grid Lookups (Plenoxels \& Instant-NGP):}
+    \begin{itemize}
+        \item \textbf{Plenoxels (No Neural Network!):} Stores density $\sigma$ and \textbf{Spherical Harmonics (SH) coefficients} ($\ell_{\max}=2 \Rightarrow 9\times 3 = 27$ coeffs + $1\,\sigma = 28$ values/voxel) on a \textbf{sparse voxel grid}. Queries via trilinear interpolation, renders via ray marching, and optimizes voxel values directly with photometric loss + Total Variation ($\mathcal{L}_{\text{TV}}$) regularization, pruning empty voxels. Trains in minutes instead of hours.
+        \item \textbf{Instant-NGP (Multiresolution Hash Encoding):} Uses $L=16$ grid resolutions $N_\ell$. Instead of storing $N_\ell^3$ cells, maps integer cell corners to a fixed-size table of $T$ feature vectors ($F=2$ dims) via a spatial XOR hash $h(c) = (\bigoplus c_i\pi_i) \bmod T$, interpolates across the 8 corners at each level, concatenates all $L$ levels with $\gamma(\omega)$, and feeds a \textbf{tiny 2-layer MLP}. Memory is bounded by $L\cdot T\cdot F$ regardless of spatial resolution; hash collisions are resolved automatically by gradient descent because surface gradients dominate empty space. Trains in \textbf{seconds}.
+    \end{itemize}
+\end{itemize}
+
+\hr
+\section*{\textcolor{primary}{Lecture 9: Neural Implicit Rendering (IDR, VolSDF \& NeuS)}}
+\textbf{Core Concept:} NeRF's unconstrained density produces noisy, bumpy surfaces. Enforcing that geometry is the zero level set of an SDF ($f_\theta(x)=0, \|\nabla f_\theta\|=1$) gives clean surfaces, rendered either via single-point ray intersection (IDR) or unbiased SDF-to-density volume rendering (VolSDF, NeuS).
+
+\begin{itemize}
+    \item \textbf{Pure Surface Rendering (IDR --- Yariv et al.):}
+    \begin{itemize}
+        \item \textbf{Step 1 (Ray-Surface Intersection):} Find the root $t^*$ where $\bar{f}_\theta(t^*) = f_\theta(x_0 + t^*\omega) = 0$ using a hybrid of \textbf{sphere tracing} and the \textbf{secant method} (since neural $f_\theta$ is only approximately an SDF and can overshoot).
+        \item \textbf{Step 2 (Analytic Implicit Differentiation):} We \emph{do not} backpropagate through the iterative sphere-tracing loop! Applying the Implicit Function Theorem to $f_\theta(x_0 + t^*(\theta)\omega) = 0$ yields the exact analytic gradient at the final hit point $p = x_0 + t^*\omega$:
+        $$\frac{\partial t^*}{\partial \theta} = -\left(\nabla_p f_\theta(p) \cdot \omega\right)^{-1} \frac{\partial f_\theta(p)}{\partial \theta}, \qquad \frac{\partial p}{\partial \theta} = -\omega\left(\nabla_p f_\theta(p) \cdot \omega\right)^{-1} \frac{\partial f_\theta(p)}{\partial \theta}$$
+        \item \textbf{Step 3 (Normal-Aware Appearance \& Loss):} Shading network $g_\phi(p, \omega, n)$ must take the surface normal $n = \nabla_p f_\theta(p)$ to model shiny reflections and pass appearance gradients into geometry. Trained with $\mathcal{L}_{\text{photo}} + \lambda_{\text{eik}}\big|\|\nabla f_\theta\| - 1\big| + \mathcal{L}_{\text{mask}}$.
+        \item \textbf{Limitations of Pure Surface Rendering:} Only updates 1 point per ray; discontinuous at occlusion boundaries/silhouettes ($\nabla_p f \cdot \omega \to 0$); \textbf{requires a foreground mask loss} ($\min_t f_\theta(x_0+t\omega)$) to pull missed rays toward the object.
+    \end{itemize}
+    \item \textbf{Unifying Surfaces and Volume Rendering (VolSDF \& NeuS):}
+    \begin{itemize}
+        \item \textbf{Idea:} Predict an SDF $d = f_\theta(x)$, convert $d$ into a volume density $\sigma$ via a smooth analytical formula, and use standard NeRF ray marching (smooth gradients along the entire ray, \textbf{no masks required}).
+        \item \textbf{VolSDF:} $\sigma(x) = \alpha \Psi_\beta(-d_\Omega(x))$, where $\Psi_\beta$ is the CDF of a zero-mean Laplace distribution with sharpness $\beta$ ($\sigma \to \alpha$ inside, $0$ outside, $\alpha/2$ on the surface).
+        \item \textbf{Why Naive Bell-Shaped SDF-to-Density Fails (Bias):} If you set density to a symmetric bell curve $\sigma(t) = \phi_s(f(p(t)))$ peaking at the surface $f=0$, transmittance $T(t) = \exp(-\int_0^t \sigma)$ is already decaying as the ray climbs the bell curve. Thus the rendering weight $w(t) = T(t)\sigma(t)$ satisfies $w'(t^*) = -T\sigma^2 < 0$, meaning \textbf{$w(t)$ peaks strictly in front of the true surface} (systematic depth bias!).
+        \item \textbf{NeuS Unbiased Density:} Designs the opaque density $\rho(t) = \max\!\left(\frac{-\frac{d\Phi_s}{dt}(f(p(t)))}{\Phi_s(f(p(t)))}, 0\right)$ where $\Phi_s(x) = (1+e^{-sx})^{-1}$ is the sigmoid and $\phi_s = \Phi_s'$. Then along a planar surface crossing, $T(t) = \Phi_s(f(p(t)))$ and the weight $w(t) = T(t)\rho(t) = |\nabla f\cdot\omega|\,\phi_s(f(p(t)))$ \textbf{peaks at the exact zero-crossing $f=0$}.
+    \end{itemize}
+\end{itemize}
+
+\hr
+\section*{\textcolor{primary}{Lecture 10: Differentiable Primitive Rendering \& 3D Gaussian Splatting (3DGS)}}
+\textbf{Core Concept:} Volume ray marching wastes queries in empty space. Primitive rendering projects explicit primitives onto the screen (rasterization: scatter) and blends softened footprints front-to-back for real-time (>130 FPS) differentiable rendering.
+
+\begin{itemize}
+    \item \textbf{Differentiable Mesh Rendering (SoftRas / PyTorch3D):}
+    \begin{itemize}
+        \item \textbf{Why Hard Mesh Rendering Is Not Differentiable:} Ray-triangle barycentrics $(\alpha, \beta)$ are differentiable w.r.t. vertices of the visible triangle, but pixel color is a step function at \textbf{1) silhouette/occlusion boundaries} (moving a vertex across a pixel center causes a sudden jump) and \textbf{2) depth-ordering flips} (z-buffer $\arg\min$ has zero gradient for hidden triangles).
+        \item \textbf{Two-Part Fix:}
+        1) \emph{Make triangles soft} in 2D screen space: $m_k = \text{sigmoid}(-\Delta_k / \sigma)$ where $\Delta_k$ is signed pixel distance to triangle $k$'s edge ($\Delta < 0$ inside).
+        2) \emph{Aggregate the $K$ closest triangles} via depth-softmax weights $w_k \propto m_k e^{-\lambda_k / \gamma}$ so partially occluded triangles still receive depth gradients.
+        \item \textbf{Ray Tracing vs. Rasterization Loop Order:} Ray tracing loops `for pixel: for triangle` ($\Theta(PN)$ tests, redundant for nearby pixels). Rasterization swaps the loops to `for triangle: project to 2D bbox and update pixel K-buffers`, reducing work to $\Theta(N\bar{f} + PK)$.
+    \end{itemize}
+    \item \textbf{3D Gaussian Splatting (3DGS --- Kerbl et al.):}
+    \begin{itemize}
+        \item \textbf{The Primitive (59 floats):} Mean $\mu \in \mathbb{R}^3$ (3), scale $s \in \mathbb{R}^3$ (3), rotation quaternion $q \in \mathbb{R}^4$ (4), opacity $\alpha \in [0,1]$ (1), and degree-3 Spherical Harmonics color coefficients ($(3+1)^2 \times 3 = 48$).
+        \item \textbf{Why Factorize Covariance $\Sigma = R S S^\top R^\top$:} Taking raw gradient steps on $\Sigma$ can yield negative eigenvalues (invalid Gaussian). Factorizing into rotation $R$ and diagonal scale $S$ guarantees $\Sigma = (RS)(RS)^\top$ is \textbf{always positive semi-definite}.
+        \item \textbf{EWA Splatting Projection to 2D:} World-to-camera is affine ($\Sigma_c = W\Sigma W^\top$), which keeps Gaussians exact. Perspective division $\pi(X,Y,Z) = (f_x X/Z, f_y Y/Z)$ is nonlinear, so 3DGS linearizes $\pi$ around the Gaussian mean $\mu_c$ using its Jacobian $J = \frac{\partial \pi}{\partial x_c}\big|_{\mu_c}$:
+        $$\mu_{2D} = \pi(W\mu + t), \qquad \Sigma_{2D} = J W \Sigma W^\top J^\top \in \mathbb{R}^{2\times 2}$$
+        \item \textbf{Fast Tile Rasterizer:}
+        1) Split screen into $16\times 16$ pixel tiles; instantiate a Gaussian copy for each overlapped tile with a 64-bit key `[tile ID (32b) | depth (32b)]`.
+        2) Run \textbf{one global GPU Radix Sort} to get front-to-back lists for all tiles simultaneously.
+        3) Blend front-to-back per pixel: $C = \sum_k c_k \bar{\alpha}_k T_k$ with $\bar{\alpha}_k = \alpha_k \exp(-\frac{1}{2} d^\top \Sigma_{2D}^{-1} d)$ (clamped $\le 0.99$, skipped if $<1/255$, early-stopped when $T < 10^{-4}$).
+        \item \textbf{Backward Pass Trick:} Walks \textbf{back-to-front}, recovering $T_i = T_{i+1} / (1 - \bar{\alpha}_i)$ on the fly from the stored final transmittance $T_{\text{final}}$ in $\mathcal{O}(1)$ memory per pixel: $\frac{\partial C}{\partial \bar{\alpha}_i} = T_i c_i - \frac{1}{1-\bar{\alpha}_i}\sum_{j>i} c_j \bar{\alpha}_j T_j$.
+        \item \textbf{Initialization \& Adaptive Density Control:} Initialized from sparse SfM points (random init degrades background). Every 100 steps, Gaussians with large view-space positional gradients (meaning they fail to fit local geometry) are either \textbf{Cloned} (if small: under-reconstruction) or \textbf{Split} with scale $\div 1.6$ (if large: over-reconstruction). Low-opacity ($\alpha < 0.005$) Gaussians are pruned, and $\alpha$ is periodically reset to remove floaters. Anisotropy is crucial (isotropic balls fail on thin leaves/spokes).
+        \item \textbf{Limitations \& 2DGS:} 3DGS has high memory ($\sim 700\text{ MB}$), \textbf{popping artifacts} (sorts once per Gaussian center rather than per pixel), and lacks exact surface normals because 3D ellipsoids have view-dependent cross-sections. \textbf{2D Gaussian Splatting (2DGS)} flattens primitives into planar 2D disks ($S = \text{diag}(s_u, s_v, 0)$) with exact normals and closed-form ray-plane intersection.
+    \end{itemize}
+\end{itemize}
+
+\hr
+\section*{\textcolor{primary}{Lecture 11: Relightable 3D Representations (Inverse Rendering)}}
+\textbf{Core Concept:} Standard NeRF and 3DGS bake capture lighting into outgoing color $g_\phi(x,\omega)$ and \textbf{cannot be relit}. Relighting requires inverting the Rendering Equation to disentangle \emph{Geometry}, \emph{Material (BRDF)}, and \emph{Light}.
+
+\begin{itemize}
+    \item \textbf{The Rendering Equation \& The Fundamental Ambiguity:}
+    $$L_o(x, \omega_o) = \int_\Omega \underbrace{f_r(x, \omega_i, \omega_o)}_{\text{Material (BRDF)}} \, \underbrace{L_i(x, \omega_i)}_{\text{Incident Light}} \, \underbrace{(n^\top \omega_i)}_{\text{Geometry}} \, d\omega_i$$
+    \textbf{Why Inverse Rendering Fails Unconstrained:} A capture under one illumination only observes the product $\text{Material} \times \text{Light}$. Many factorizations produce identical training pixels (e.g., red paint under white light $=$ white paint under red light; or baking all shadows and shading directly into the diffuse albedo $a(x)$ under a flat white environment light) yet fail catastrophically under a new light.
+    \item \textbf{Remedy 1 --- Constrain the Physical Model (NeRS, PhySG, IRGS):}
+    \begin{itemize}
+        \item \textbf{Light \& Material Constraints:} Assume distant environment light $L_i(x,\omega) \approx L_e(\omega)$ (often monochrome/gray to lock chromaticity into albedo) and split BRDF into spatially varying diffuse albedo $a(x)/\pi$ plus a low-parameter shared specular roughness lobe $f_s(\omega_i, \omega_o; \rho)$.
+        \item \textbf{PhySG (Closed-Form Integration):} Represents the environment map, specular BRDF lobe, and cosine term as \textbf{Spherical Gaussians (SGs)} $G(\omega) = \mu e^{\lambda(\xi^\top \omega - 1)}$. Because the product of two SGs is another SG and the integral of an SG over the sphere has a closed form $\mu\frac{2\pi}{\lambda}(1-e^{-2\lambda})$, PhySG integrates the rendering equation in closed form without Monte Carlo sampling. \textbf{Flaw:} Ignores visibility $V(x,\omega_i)$, so cast shadows get baked into dark albedo patches!
+        \item \textbf{IRGS (Relightable 2D Gaussians with Shadows):} Stores normal, albedo, and roughness on 2D Gaussians. First splats/blends attributes into a per-pixel G-buffer $(\bar{n}, \bar{a}, \bar{r}, \bar{d})$ (\emph{blend first, then shade once per pixel}), then traces 256 shadow rays per pixel through the Gaussians to obtain visibility $V(x,\omega_j) = \prod(1-\alpha_i)$ and 1-bounce indirect color $L_{\text{ind}}(x,\omega_j)$.
+    \end{itemize}
+    \item \textbf{Remedy 2 --- Capture More Informative Data (Light Stage / OLAT):}
+    \begin{itemize}
+        \item \textbf{Linearity of Light Transport:} Photons do not interact, so $I(c_A A + c_B B) = c_A I_A + c_B I_B$ (in linear HDR space). Capturing \textbf{One Light at a Time (OLAT)} images $I_k$ builds the light-transport matrix $T = [I_1 \mid \cdots \mid I_K]$; relighting under any new environment $\ell$ is a simple weighted sum $I_{\text{new}} = \sum_k \ell_k I_k$ with \textbf{zero BRDF or geometry estimation} (requires a static subject in a light stage).
+    \end{itemize}
+    \item \textbf{Remedy 3 --- Learned Data Priors (MaterialFusion, Neural Gaffer):}
+    \begin{itemize}
+        \item \textbf{MaterialFusion:} Adds a diffusion prior loss $\gamma\mathcal{L}_{\text{prior}}(\text{albedo}_\theta, \text{roughness}_\theta)$ inside per-scene physical optimization to penalize baked shading in the albedo.
+        \item \textbf{Neural Gaffer:} Diffusion U-Net that relights 2D images directly without explicit BRDF/geometry. Crucially, the target HDR environment map is \textbf{rotated into the camera coordinate frame} (giving every pixel a consistent directional meaning) and fed as both an LDR tone-mapped copy (visible look) and a log-normalized copy (high dynamic range peaks).
+    \end{itemize}
+\end{itemize}
+
+\hr
+\section*{\textcolor{primary}{Lecture 12: Gaussian-Based Active Planning \& Active Mapping}}
+\textbf{Core Concept:} In Active Perception, the robot chooses its next camera pose $T_{t+1}$ to maximize task information gain under a view budget. Replacing each 3D Gaussian's RGB color $c_k$ with a task utility vector $s_k$ turns the fast 3DGS rasterizer into an \textbf{occlusion-aware viewpoint scoring engine}: $g(T,\tau) = \sum_{u\in\Omega}\sum_k w_k(u;T)\,s_k(\tau,T)$.
+
+\begin{itemize}
+    \item \textbf{Coverage-Driven Baseline (MAGICIAN):}
+    \begin{itemize}
+        \item Predicts unobserved geometry with a 3D Volume Occupancy Network to place \textbf{Imagined Gaussians} where opacity $\alpha_k = \hat{p}_{\text{occ}}$ and color $c_k = \text{novelty} \in \{0,1\}$ ($1=\text{unseen}$, $0=\text{seen}$), then plans trajectories via Beam Search.
+        \item \textbf{Flaws for Robotics:} 1) \emph{Single-glance saturation:} Seeing an object once from $6\text{ m}$ away sets novelty to $0$, leaving torn, hole-ridden geometry. 2) \emph{No semantics:} Wastes budget mapping blank walls instead of tabletop objects.
+    \end{itemize}
+    \item \textbf{Semantic Object-Centric Dual-Map Architecture:}
+    \begin{itemize}
+        \item \textbf{1) Online Gaussian Map (Final Output \& Renderer):} Fuses 2D OneFormer semantic predictions using a memory-efficient \textbf{4-Slot Depth-Gated Voting} scheme. A Gaussian $g_k$ only receives a semantic vote at pixel $u$ if it passes the \textbf{Visible Surface Gate} $|z_k(T_t) - D_t(u)| \le \delta_{\text{surf}}$ (prevents labels from bleeding onto occluded walls behind foreground objects).
+        \item \textbf{2) 5 cm Voxel Planning State (Built from Depth Alone):} Tracks `free / occupied / unknown` space (for collision-free flight and \textbf{pruning mid-air Gaussian floaters}), frontier flags, closest viewing distance $z_v$, 24-bit directional bitmasks ($b_{\text{seen}}, b_{\text{feas}}$), and majority-voted Gaussian semantic class $c(v)$.
+    \end{itemize}
+    \item \textbf{Multi-Signal Channel Rendering \& Horizon-5 Beam Search:}
+    \begin{itemize}
+        \item \textbf{Three Voxel Signals Painted onto Gaussians:}
+        1) \textbf{Discovery ($s_{\text{disc}}$):} Active on frontier voxels viewed from their open side (higher when closer).
+        2) \textbf{Coverage ($s_{\text{cov}}$):} Active on surface voxels seen from $<2$ directions when viewed from a new feasible sector.
+        3) \textbf{Objects ($s_{\text{obj}}$):} Active on unretired foreground objects ($c(v)\in\mathcal{C}_{\text{obj}}$); rewards each \textbf{halving of viewing distance} down to $1\text{ m}$ ($4\text{ m} \to 2\text{ m} \to 1\text{ m}$) plus new viewing sectors until the object is \textbf{retired} ($s_{\text{obj}}=0$).
+        \item \textbf{Beam Search ($W=5$ sequences, $H=5$ steps ahead):} Expands neighbor poses, renders the multi-channel Gaussian utility map, discounts surfaces already seen earlier in the candidate trajectory to avoid double-counting, and executes the first step of the best sequence (receding horizon).
+        \item \textbf{Task Modularity (Object Navigation):} Swapping the painted channels to (\emph{Frontier}, \emph{Out-of-sight Doorway Relay}, and \emph{VLM Target Bounding Box}) repurposes the exact same renderer and beam-search planner for zero-shot object navigation.
+    \end{itemize}
+\end{itemize}
+
+\end{document}

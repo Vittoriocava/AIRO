@@ -1661,7 +1661,7 @@ The summary slide (72) repeats the zoo of slide 4: mesh, point cloud, CAD model,
 \subsection*{Comparison table}
 \newcommand{\Y}{\cellcolor{green!25}}
 \newcommand{\Pm}{\cellcolor{yellow!30}}
-\newcommand{\N}{\cellcolor{red!22}}
+\newcommand{\NoCell}{\cellcolor{red!22}}
 \begin{center}
 \small
 \renewcommand{\arraystretch}{1.3}
@@ -1669,9 +1669,9 @@ The summary slide (72) repeats the zoo of slide 4: mesh, point cloud, CAD model,
 \toprule
  & \textbf{Get surface points} & \textbf{Inside / outside} & \textbf{Change topology continuously} & \textbf{Render directly} & \textbf{Memory scales with}\\
 \midrule
-Point cloud & \Y given & \N no surface & \Y any point set & \Pm splats & points ($N$)\\
-Triangle mesh & \Y sample triangles & \Pm count ray crossings & \N same wiring only & \Y rasterizer & vertices, faces\\
-Parametric & \Y evaluate $f$ & \N search over $\vu$ & \N same topology only & \N via a mesh & parameters of $f$\\
+Point cloud & \Y given & \NoCell no surface & \Y any point set & \Pm splats & points ($N$)\\
+Triangle mesh & \Y sample triangles & \Pm count ray crossings & \NoCell same wiring only & \Y rasterizer & vertices, faces\\
+Parametric & \Y evaluate $f$ & \NoCell search over $\vu$ & \NoCell same topology only & \NoCell via a mesh & parameters of $f$\\
 Voxels & \Pm marching cubes & \Y look up cell & \Pm with probabilities & \Pm blocky & $n^3$\\
 Implicit / SDF & \Pm marching cubes & \Y sign of $f$ & \Y any topology & \Pm ray marching & grid $n^3$ or network\\
 \bottomrule

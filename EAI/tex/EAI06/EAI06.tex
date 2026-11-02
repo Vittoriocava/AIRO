@@ -161,8 +161,11 @@ $\mathbf R_i(s\bX_j)+s\mathbf t_i=s(\mathbf R_i\bX_j+\mathbf t_i)$, and the pers
 A photograph of a toy house and of a real house can be identical. A single camera therefore recovers the world only \emph{up to a similarity} (rotation, translation \emph{and} scale: 7 degrees of freedom), which is why monocular maps also drift in scale (Section~6.4).
 \end{intuition}
 
-\imgph[4.2cm]{4}{Maps built from one camera: sparse features of a room (left) and a dense desktop (right).}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793642920728.png}
+	\caption{Maps built from one camera: sparse features of a room (left) and a dense desktop (right).}\label{fig:1793642920728}
+\end{figure}
 \subsection{SLAM and Structure-from-Motion \slrs{5}}
 The unknowns and the error are those of lecture 05: camera poses $\bT_i$ (world to camera), 3D points $\bX_j$, and the reprojection error of every observation. Both problems stem from the same maximum a posteriori formulation; the \emph{setting} differs.
 
@@ -182,8 +185,11 @@ SfM is like developing all holiday photos and then assembling the 3D model at ho
 \subsection{Running Example: VBR Campus \slrs{6}}
 \textbf{VBR} (Vision Benchmark in Rome) was recorded hand-held and by car with a global-shutter stereo camera of wide baseline, a 3D LiDAR, an IMU and an RTK-GPS. Its ground truth refines the RTK-GPS with LiDAR bundle adjustment, accurate to $\pm 3$\,cm over 1.5\,km; its six datasets cover over 40\,km. The running example of the lecture is a sequence of around 11\,km.
 
-\imgph[5cm]{6}{VBR: sensor-rig reference frames (camera left/right CL, CR, LiDAR $L$, IMU $I$) and two point-cloud/map renderings of the Rome sequences.}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793642990348.png}
+	\caption{VBR: sensor-rig reference frames (camera left/right CL, CR, LiDAR $L$, IMU $I$) and two point-cloud/map renderings of the Rome sequences.}\label{fig:1793642990348}
+\end{figure}
 % =====================================================================
 \section{Filtering: From the Bayes Filter to EKF-SLAM \slr{7--13}}
 \subsection{SLAM as a Graphical Model \slrs{8}}
@@ -324,7 +330,11 @@ Numbers: with $N=100$ points the state has $313$ entries and $\Sigma$ about $98{
 \begin{intuition}
 Instead of scanning the whole image for each of 100 features, the filter says ``it must be about \emph{here}, give or take this much''. Searching a few small ellipses is why a 1990s-style EKF reaches 30\,Hz; and the ellipse shrinks as the map is better known.
 \end{intuition}
-\imgph[4.8cm]{12}{MonoSLAM: search ellipses in a wide-angle image (top) and predicted camera paths of the motion model (bottom).}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793643025739.png}
+	\caption{MonoSLAM: search ellipses in a wide-angle image (top) and predicted camera paths of the motion model (bottom).}\label{fig:1793643025739}
+\end{figure}
 
 \subsection{Limits of Filtering \slrs{13}}
 \begin{itemize}[nosep]
@@ -562,8 +572,11 @@ For binary descriptors $\mathbf d,\mathbf d'\in\{0,1\}^n$ the \emph{Hamming dist
 \begin{intuition}
 Matching two descriptors is one XOR and one popcount instruction: orders of magnitude cheaper than the Euclidean distance between 128 floats of SIFT. Example with 8 bits: \texttt{10110010} vs.\ \texttt{10011010} differ in $2$ positions, so $d=2$. The 8-level pyramid with factor $1.2$ covers a total scale range of $1.2^7\approx3.6$, which is why ORB matches survive strong zoom changes.
 \end{intuition}
-\imgph[4.2cm]{25}{ORB matches between a frame and a keyframe under a strong change of scale.}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793643063608.png}
+	\caption{ORB matches between a frame and a keyframe under a strong change of scale.}\label{fig:1793643063608}
+\end{figure}
 \subsection{Map Initialization \slrs{26}}
 The first map needs the relative pose of two frames and triangulated points, for planar and general scenes alike. Between a reference frame 1 and the current frame 2, two models are fitted in parallel with RANSAC: a homography $\mathbf x_2\simeq\bH_{21}\mathbf x_1$ (4 points, planar scene) and a fundamental matrix $\mathbf x_2^\top\mathbf F_{21}\mathbf x_1=0$ (8 points, general scene), each scored by its symmetric transfer error
 \[
@@ -581,8 +594,11 @@ S_M=\sum_i\Big[\rho_M\big(d^2(\mathbf x_1^i,M^{-1}\mathbf x_2^i)\big)+\rho_M\big
 \begin{intuition}
 A homography explains almost anything seen with \emph{no parallax} (a plane, or pure rotation), but then depth is ill-defined and triangulation is unreliable. ORB-SLAM prefers to \emph{wait for parallax} rather than start from a wrong planar map; the slide shows two other systems that started wrongly and drifted, while ORB-SLAM, which waited, did not.
 \end{intuition}
-\imgph[5.2cm]{26}{Some time after initialization: two other systems (top, middle) started from a wrong planar map; ORB-SLAM (bottom) waited for parallax.}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793643095820.png}
+	\caption{Some time after initialization: two other systems (top, middle) started from a wrong planar map; ORB-SLAM (bottom) waited for parallax.}\label{fig:1793643095820}
+\end{figure}
 \subsection{Tracking \slrs{27}}
 The tracking thread estimates the pose of every frame:
 \begin{enumerate}[nosep]
@@ -596,8 +612,11 @@ The tracking thread estimates the pose of every frame:
 \begin{intuition}
 Only $6$ unknowns are optimized, so this runs in a few milliseconds per frame. The Huber cost behaves quadratically for small errors and linearly for large ones, so one wrong match (an outlier with a 50-pixel error) cannot dominate $100$ good ones. \textbf{PTAM}, a monocular system for small augmented-reality workspaces, predicts with a decaying velocity and tracks coarse to fine: 50 points at the coarsest image scale, then up to 1000.
 \end{intuition}
-\imgph[4.8cm]{27}{Keyframes (blue), current camera (green), map points (black) and local map (red).}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793643121599.png}
+	\caption{Keyframes (blue), current camera (green), map points (black) and local map (red).}\label{fig:1793643121599}
+\end{figure}
 \subsection{Keyframes \slrs{28}}
 PTAM splits SLAM into two threads that run in parallel: \textbf{tracking} processes every frame in real time (freed from updating the map, it can process each image more thoroughly), and \textbf{mapping} works on keyframes only: many video frames are redundant, and a smaller set of useful keyframes is refined by bundle adjustment without strict real-time limits.
 \begin{itemize}[nosep]
@@ -607,8 +626,11 @@ PTAM splits SLAM into two threads that run in parallel: \textbf{tracking} proces
 \begin{intuition}
 Keyframes are the ``postcards'' of the trip: you do not keep every frame of a 30\,Hz video (11\,km would be hundreds of thousands), only enough views to triangulate the scene. ORB-SLAM's strategy is generous insertion followed by pruning: it is easier to remove a redundant postcard than to recover a view you never kept.
 \end{intuition}
-\imgph[5cm]{28}{A desk mapped by PTAM: two views of the map with its keyframes (top), and the 57 keyframes (bottom).}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793643168438.png}
+	\caption{A desk mapped by PTAM: two views of the map with its keyframes (top), and the 57 keyframes (bottom).}\label{fig:1793643168438}
+\end{figure}
 \subsection{Local Mapping \slrs{29}}
 \begin{definition}{Covisibility graph}{covis}
 Nodes are keyframes; an edge joins two keyframes that share at least $15$ map points, weighted by the number of shared points.
@@ -635,8 +657,11 @@ For every new keyframe the local mapping thread:
 \begin{intuition}
 The covisibility graph answers ``who looks at the same things as me?''. Optimizing only that neighbourhood keeps the cost bounded while the map grows to kilometres: \emph{local} BA is constant-time per keyframe, unlike EKF-SLAM whose cost grows with the whole map. Fixing the outer keyframes plays the role of the prior on $\bT_1$ for the local problem.
 \end{intuition}
-\imgph[5cm]{29}{Covisibility graph of an indoor handheld sequence (TUM RGB-D).}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793643210553.png}
+	\caption{Covisibility graph of an indoor handheld sequence (TUM RGB-D).}\label{fig:1793643210553}
+\end{figure}
 \subsection{Loop Detection with Bags of Binary Words \slrs{30}}
 A loop is detected by \emph{appearance}: each image is compared with all the past ones, fast enough for every frame.
 \begin{itemize}[nosep]
@@ -695,8 +720,11 @@ $\mathbf S=\begin{pmatrix}s\mathbf R&\mathbf t\\\mathbf 0^\top&1\end{pmatrix}$, 
 \begin{intuition}
 Numbers: if after a loop the end of the trajectory is estimated at relative scale $1.10$ with respect to the start, the loop edge says so, and the $\Sim$ optimization spreads $\ln1.10\approx0.0953$ over, say, $100$ keyframes, about $0.00095$ of log-scale each. A $\SE$ optimization has no scale variable, so it can bend the path but the scale error stays: the slide shows the 6\,DoF result still distorted while the 7\,DoF result matches the aerial photo.
 \end{intuition}
-\imgph[6.2cm]{31}{A square circled by a hand-held camera: (a) before optimization, (b) over $\SE$ (6\,DoF), (c) over $\Sim$ (7\,DoF), (d) aerial photo.}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793643253728.png}
+	\caption{A square circled by a hand-held camera: (a) before optimization, (b) over $\SE$ (6\,DoF), (c) over $\Sim$ (7\,DoF), (d) aerial photo.}\label{fig:1793643253728}
+\end{figure}
 \subsection{Relocalization \slrs{32}}
 When tracking is lost, after an occlusion or an abrupt motion, the camera is localized again in the existing map:
 \begin{enumerate}[nosep]
@@ -708,8 +736,11 @@ On indoor handheld sequences with ground truth (TUM RGB-D), $78.4\%$ of $2769$ f
 \begin{intuition}
 Relocalization reuses everything already built: the same bag-of-words database that detects loops here answers ``where am I?'' from a single image. It is a \emph{global} localization problem (no prior pose), solved by PnP inside RANSAC, which tolerates the moving people that spoil many of the matches.
 \end{intuition}
-\imgph[4.2cm]{32}{A relocalization among moving people: ORB matches between the frame and a keyframe.}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793643293880.png}
+	\caption{A relocalization among moving people: ORB matches between the frame and a keyframe.}\label{fig:1793643293880}
+\end{figure}
 % =====================================================================
 \section{Research Directions \slr{33--40}}
 \subsection{Continuous Time: Rolling-Shutter Cameras \slrs{34}}
@@ -732,8 +763,11 @@ The numbers: $4.7\%$ versus $0.57\%$ of the path length, an $8\times$ reduction 
 \end{tikzpicture}
 \caption{Each scanline is a camera with its own time along the trajectory (redrawn from slide 34); together they form the image.}
 \end{figure}
-\imgph[3.8cm]{34}{A rolling-shutter warp (distorted and skewed building facade).}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793643362769.png}
+	\caption{A rolling-shutter warp (distorted and skewed building facade).}\label{fig:1793643362769}
+\end{figure}
 \subsection{Continuous Time: Cumulative B-Splines on $\SE$ \slrs{35}}
 The trajectory becomes a continuous function of time, a \emph{cumulative cubic B-spline} built with the Lie algebra (lecture 05). Control poses $\bT_i$ sit at uniform times $t_i$, $\Delta t$ apart. For $t\in[t_i,t_{i+1})$ let $u=(t-t_i)/\Delta t\in[0,1)$; the four poses $\bT_{i-1},\dots,\bT_{i+2}$ give
 \[
@@ -790,8 +824,11 @@ i^\star=\argmax_i\ \mathrm{Vol}_{3\sigma}(\bS_i)=\argmax_i\ \det(\bS_i)^{1/2}.
 \begin{intuition}
 It is MonoSLAM's search ellipse turned into a decision: look at the thing you are \emph{least sure about}, because a measurement there reduces uncertainty the most. The ellipsoid volume is $\tfrac43\pi\,3^3\sqrt{\det\bS_i}$ for a 3D innovation, so ranking by $\det\bS_i$ is the same as ranking by volume.
 \end{intuition}
-\imgph[4.2cm]{37}{The robot and its active head (top); fixated views of features 0, 5, 11, 12 and 14, each marked by a white square (bottom).}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793643387053.png}
+	\caption{The robot and its active head (top); fixated views of features 0, 5, 11, 12 and 14, each marked by a white square (bottom).}\label{fig:1793643387053}
+\end{figure}
 \subsection{Active Localization: Learning Where to Look \slrs{38}}
 \textbf{Active localization} chooses where the camera should look so that it localizes accurately in a known map, built by structure-from-motion.
 \begin{figure}[htbp]\centering
@@ -830,8 +867,11 @@ With over $200$ million parameters, both matrices are kept \emph{diagonal}, so t
 \begin{intuition}
 Toy numbers for $3$ parameters: $\mathrm{diag}(\mathbf I_{\mathbf x})=(1,4,0.1)$ and $\mathrm{diag}(\mathbf I_{\mathcal D})=(10,1,0.1)$ give ratios $(0.1,4,1)$, bound $\tfrac12\cdot5.1=2.55$. The view is valuable mostly because it informs the second parameter, which previous views barely constrained. In words: \emph{go where the model is least certain and the new image would speak the loudest}.
 \end{intuition}
-\imgph[4.5cm]{39}{Information gain over the viewing sphere of a scene, with candidate views (frusta) and four of their renders.}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793643421377.png}
+	\caption{Information gain over the viewing sphere of a scene, with candidate views (frusta) and four of their renders.}\label{fig:1793643421377}
+\end{figure}
 \subsection{Outlook: Learned Front Ends \slrs{40}}
 Two recent systems keep the back-end machinery of this lecture, least squares over a graph of relative constraints on a Lie group, and replace the feature front end by a network from earlier lectures.
 \begin{figure}[htbp]\centering
@@ -858,8 +898,11 @@ Speed / camera & about 15\,FPS on one GPU; no camera model beyond a single centr
 \begin{intuition}
 Degrees of freedom of the group tell how much ambiguity the front end leaves: $\SE$ has $6$ (metric, e.g.\ stereo), $\Sim$ has $7$ (one camera: unknown scale), and $\SL$ has $15$ (an \emph{uncalibrated} reconstruction, where even angles and parallelism are not trustworthy and each submap needs a full projective correction). The back end is the same sparse least squares of Section~6.3; only the group and the residual change.
 \end{intuition}
-\imgph[4.2cm]{40}{MASt3R-SLAM pipeline (left) and VGGT-SLAM $\mathrm{Sim}(3)$ vs.\ $\mathrm{SL}(4)$ comparison renderings (right).}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793643482387.png}
+	\caption{MASt3R-SLAM pipeline (left) and VGGT-SLAM $\mathrm{Sim}(3)$ vs.\ $\mathrm{SL}(4)$ comparison renderings (right).}\label{fig:1793643482387}
+\end{figure}
 % =====================================================================
 \section{Summary \slrs{41}}
 \begin{center}\footnotesize

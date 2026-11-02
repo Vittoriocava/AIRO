@@ -111,15 +111,22 @@ Recovering depth from a single image is \emph{ill-posed} (previous lecture). Thr
 \item \textbf{Stereo vision} triangulates using two views; because the baseline is known, depth is metric.
 \item \textbf{A depth prior} (object assumptions or a neural network) usually gives depth only \emph{up to an affine} transformation.
 \end{itemize}
-\photo{4}{3.2cm}{Historical and natural binocular systems: Cyclops (cube illusion), stalk-eyed fly, stereoscopic rangefinder (four small photos on the slide).}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793640810665.png}
+	\caption{Historical and natural binocular systems: Cyclops (cube illusion), stalk-eyed fly, stereoscopic rangefinder}\label{fig:1793640810665}
+\end{figure}
 \begin{intuition}
 Your two eyes are a metric ruler \emph{because} the distance between them is fixed. A single eye (or a monocular network) can say ``this is nearer than that'' but not ``this is 12\,m away''. Stereo trades a second camera for a physical scale.
 \end{intuition}
 
 \subsection{Two-View Stereo Matching \slr{5}}
 \textbf{Goal:} recover the \emph{disparity} (proportional to inverse depth) for every pixel of a reference image from two input images.
-\photo{5}{3.6cm}{Left image, right image and the colour-coded disparity map (Geiger et al., ACCV 2010).}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793640934096.png}
+	\caption{Left image, right image and the colour-coded disparity map (Geiger et al., ACCV 2010).}\label{fig:1793640934096}
+\end{figure}
 
 \subsection{The Classical Stereo Pipeline \slr{6}}
 Task: build a dense 3D model of a static scene from two images. Pipeline:
@@ -201,8 +208,11 @@ If both cameras face exactly the same direction (image planes co-planar), the ep
 \end{tikzpicture}
 \caption{Rectification as a pure rotation of each camera (top view; blue arrows are optical axes). After the rotation both image planes are the same plane, parallel to the baseline.}
 \end{figure}
-\photo{8}{3.4cm}{Example pair of a house before and after rectification, with red horizontal lines (slide 8).}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793640986956.png}
+	\caption{Example: pair of a house before and after rectification.}\label{fig:1793640986956}
+\end{figure}
 \subsection{Rectified Epipolar Constraint \slr{9}}
 \begin{Proposition}[Rectified setup]\label{prop:rect}
 Let $\K_1=\K_2=\R=\bm I$ and $\vt=(t,0,0)^{\top}$. Then
@@ -247,8 +257,11 @@ Think of $\bm r_1$ as ``the direction pointing from camera~1 to camera~2''. Rect
 
 \subsection{Rectified Pair and Disparity \slr{11}}
 In a rectified pair the correspondence of a pixel lies in the same image row; the horizontal displacement is the \emph{disparity} $d=x_1-x_2$ (on the slide $0$--$160$\,px, with the match to the left). Disparity is anti-proportional to depth: far points move less than near points.
-\photo{11}{4.2cm}{Rectified pair (two lab scenes and a street scene) with colour-coded disparity maps and the 0--160\,px colour bar (slide 11).}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793641034064.png}
+	\caption{Rectified pair (two lab scenes and a street scene) with colour-coded disparity maps and the 0--160\,px colour bar.}\label{fig:1793641034064}
+\end{figure}
 \subsection{Disparity to Depth \slr{12}}
 \begin{Theorem}[Triangulation in a rectified pair]\label{thm:depth}
 Let the cameras have focal length $f$ (in pixels) and baseline $b$, and let $d=x_1-x_2$ be the disparity of a point at depth $z$. Then
@@ -328,8 +341,11 @@ At 40\,m the disparity is only 9.7\,px. Being off by one pixel means being off b
 
 \subsection{Correspondence Ambiguity \slr{15}}
 How do we decide that two image points correspond? Assume they look ``similar''. But a single pixel does not reveal local structure (ambiguity), so we compare a small patch -- and even then the task is difficult (repetitive or textureless regions, changing appearance).
-\photo{15}{3.6cm}{Three grayscale views of an animal with red boxes marking a tail/patch whose appearance changes (slide 15).}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793641101851.png}
+	\caption{Three grayscale views of an animal with red boxes marking a tail/patch whose appearance changes}\label{fig:1793641101851}
+\end{figure}
 \subsection{Similarity Metrics \slr{16}}
 Take two $K\times K$ windows flattened to vectors $\wL,\wR\in\mathbb R^{K^2}$.
 \begin{Definition}[SSD and ZNCC]
@@ -379,7 +395,11 @@ Naively this costs $O(WHD\,K^2)$ per image.
 \end{tikzpicture}
 \caption{Illustrative cost curves along one scanline (values invented for illustration, not measured). Left: a clear unique minimum. Right: repeated texture produces several near-equal minima, so noise can make winner-takes-all pick the wrong one.}
 \end{figure}
-\photo{17}{3.6cm}{Left image, computed disparities (noisy, with holes) and ground truth (slide 17).}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793641151781.png}
+	\caption{Left image, computed disparities (noisy, with holes) and ground truth}\label{fig:1793641151781}
+\end{figure}
 \begin{intuition}
 Block matching is a ``find-my-twin'' game on one row: slide a small window of the left image along the row of the right image and keep the position with the lowest cost. Each pixel decides alone -- nobody checks whether neighbours agree -- which is why the output is noisy and why later sections add regularisation and learning.
 \end{intuition}
@@ -415,8 +435,11 @@ With the rig of the previous section, a car at 10\,m ($d_f=38.9$\,px) in front o
 \end{tikzpicture}
 \caption{Half-occlusion (top view, redrawn from slide~18). Red: background strip hidden from the right camera but visible to the left one; blue: strip hidden from the left camera.}
 \end{figure}
-\photo{18}{3.3cm}{Left image with the half-occluded region marked in red, zoomed left/right crops, and the occlusion sketch (slide 18).}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793641185132.png}
+	\caption{Left image with the half-occluded region marked in red, zoomed left/right crops, and the occlusion sketch}\label{fig:1793641185132}
+\end{figure}
 \subsection{Block Matching: Assumption Violations \slr{19}}
 Block matching assumes that \emph{all pixels inside the window are displaced by the same $d$}: the \emph{fronto-parallel assumption}. It is often wrong: slanted surfaces deform perspectively between views, and at disparity discontinuities the window content changes differently on the two sides.
 \begin{Proposition}[Disparity on a plane is affine]
@@ -428,8 +451,11 @@ A pixel $\xb$ sees $\bm X=z\,\K^{-1}\xb$. Substituting in the plane equation, $z
 \begin{intuition}
 A fronto-parallel wall has constant disparity; a floor or a slanted wall has a disparity that \emph{ramps} across the window. If the ramp is $0.1$\,px per pixel and the window is $11$ pixels wide, the left and right windows disagree by about $1.1$\,px at the edges, enough to hurt the match. Larger windows suffer more.
 \end{intuition}
-\photo{19}{3.2cm}{Street scene and Teddy-like scene crops showing perspective deformation of windows on slanted surfaces (slide 19).}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793641222426.png}
+	\caption{Street scene and Teddy-like scene crops showing perspective deformation of windows on slanted surfaces }\label{fig:1793641222426}
+\end{figure}
 \subsection{Effect of Window Size \slr{20}}
 \textbf{Trade-off.} Small windows give matching ambiguities and noisy disparity maps. Larger windows give smoother results but lose detail and suffer \emph{border bleeding}: when a window straddles a strong edge, left and right patches get the same disparity because of the dominant edge; the weakly textured background (red on the slide) lacks gradients to overcome it.
 \begin{figure}[H]\centering
@@ -445,8 +471,11 @@ A fronto-parallel wall has constant disparity; a floor or a slanted wall has a d
 \end{tikzpicture}
 \caption{Conceptual bias--variance-style trade-off in window size (illustrative curves, not measured; the slides show it with 5$\times$5 vs 11$\times$11 results).}
 \end{figure}
-\photo{20}{3.3cm}{Disparity results with 5$\times$5 and 11$\times$11 windows, with ``border bleeding'' regions boxed (slide 20).}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793641269059.png}
+	\caption{Disparity results with 5$\times$5 and 11$\times$11 windows, with ``border bleeding'' regions boxed }\label{fig:1793641269059}
+\end{figure}
 \subsection{Left-Right Consistency Test \slr{21}}
 \begin{Definition}[Left-right consistency]
 Let $d_L(x,y)$ be the disparity from matching with the left image as reference, and $d_R(x',y)$ the one with the right image as reference. A pixel is \emph{consistent} (kept) if
@@ -470,7 +499,11 @@ Left disparities at $x=2,\dots,6$ are $d_L=(2,2,2,4,2)$, so these pixels map to 
 \end{tikzpicture}
 \caption{Toy left-to-right matches from the example (new figure). Two left pixels landing on the same right pixel flags an inconsistency.}
 \end{figure}
-\photo{21}{3.3cm}{Left and right disparity maps used for the consistency check (slide 21).}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793641314587.png}
+	\caption{Left and right disparity maps used for the consistency check }\label{fig:1793641314587}
+\end{figure}
 \begin{intuition}
 Two witnesses must tell the same story: if ``left says my twin is 4 px away'' but ``that twin says its twin is 2 px away'', at least one of them is lying. Half-occluded pixels fail this test automatically, since the supposed twin belongs to something else.
 \end{intuition}
@@ -487,8 +520,11 @@ Hand-crafted features and similarity metrics do not capture all relevant geometr
 \item correlate features between the two images (dot product);
 \item take the maximum per pixel (winner-takes-all) or run a global optimisation.
 \end{itemize}
-\photo{23}{2.8cm}{Small table of left patch / right patch / label (good match, bad match) with traffic-sign crops (slide 23).}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793641365751.png}
+	\caption{Small table of left patch / right patch / label (good match, bad match) with traffic-sign crops}\label{fig:1793641365751}
+\end{figure}
 \subsection{Siamese Network Architecture \slr{24}}
 Two variants are compared on the slide.
 \begin{center}\small
@@ -557,7 +593,11 @@ where $d$ is the ground-truth disparity, $o_{\mathrm{neg}}\sim\mathcal U(\{-N_{\
 \end{tikzpicture}
 \caption{Where positive and negative right patches are sampled relative to the true match (new figure; ranges $P_{\mathrm{hi}}=1$, $N_{\mathrm{lo}}=3$, $N_{\mathrm{hi}}=6$ from the slide).}
 \end{figure}
-\photo{25}{3.3cm}{Zoomed right image with a window and rows of green ``positive'' crops and red ``negative'' crops (slide 25).}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793641412743.png}
+	\caption{Zoomed right image with a window and rows of green ``positive'' crops and red ``negative'' crops }\label{fig:1793641412743}
+\end{figure}
 \begin{intuition}
 Negatives are not random patches: they come from just a few pixels away from the truth ($3$ to $6$\,px), so they look similar and the network must learn the fine cues. Positives are allowed $\pm1$\,px of slack, because a match is never pixel-perfect. Negatives closer than $N_{\mathrm{lo}}$ are excluded since they would be nearly indistinguishable from the positives. This is a mild form of \emph{hard negative mining}. With these values there are $3$ positive and $8$ negative offsets to draw from.
 \end{intuition}
@@ -598,12 +638,19 @@ The loss does not demand that the positive scores high in absolute terms, only t
 
 \subsection{Comparisons \slr{27}}
 The slide compares, on a KITTI street scene, the left input, standard block matching, the Siamese-network matching cost, a semiglobal-matching (SGM, ``optimize'') variant, the left and right disparity maps, and the left-right consistency test. The qualitative message: learned costs are far less noisy than SAD/SSD-style block matching, and adding a global optimisation (SGM) on top improves them further.
-\photo{27}{5.0cm}{Grid of six images: left input, Siamese network, standard block matching, left disparity (SGM), right disparity, left-right consistency test (slide 27).}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793641454144.png}
+	\caption{Grid of six images: left input, Siamese network, standard block matching, left disparity (SGM), right disparity, left-right consistency test }\label{fig:1793641454144}
+\end{figure}
 \subsection{Similarity Constraint: Failure Cases \slr{28}}
 The underlying assumption is that \emph{corresponding regions look similar and non-corresponding regions look different}. It fails for: \textbf{repetitions} (several patches look alike), \textbf{textureless surfaces} (everything looks alike), \textbf{occlusions} (the twin does not exist) and \textbf{non-Lambertian surfaces} (the same point looks different from two views, e.g.\ reflections).
 The fix suggested on the slide is spatial regularisation (smoothness priors, cf.\ Huang, Lee and Mumford on range-image statistics).
-\photo{28}{4.0cm}{Street photo annotated with ``Repetitions'', ``Textureless surfaces'', ``Occlusions'' and ``Non-Lambertian surfaces'' crops (slide 28).}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793641492912.png}
+	\caption{Street photo annotated with ``Repetitions'', ``Textureless surfaces'', ``Occlusions'' and ``Non-Lambertian surfaces'' crops }\label{fig:1793641492912}
+\end{figure}
 \begin{intuition}
 A matching cost only looks at one pixel (or patch) at a time. When the local evidence is ambiguous or absent, it needs a prior about how the world behaves -- ``neighbouring pixels usually have similar depth'' -- to choose between candidates.
 \end{intuition}
@@ -638,7 +685,11 @@ For feature maps $f_L,f_R$ and maximum displacement $D$, a correlation layer out
 \end{tikzpicture}
 \caption{Schematic of a DispNet-style encoder--decoder with skip connections (new schematic, not a reproduction of the slide's network figure).}
 \end{figure}
-\photo{30}{3.3cm}{DispNet network diagram plus FlyingThings3D and Monkaa sample images (slide 30).}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793641552178.png}
+	\caption{DispNet network diagram plus FlyingThings3D and Monkaa sample images }\label{fig:1793641552178}
+\end{figure}
 \begin{intuition}
 Hand-designed block matching has no way to ``learn'' that a textureless wall continues smoothly. A network trained on millions of synthetic examples sees every ambiguity, and the U-Net structure lets coarse levels settle the global layout while fine levels sharpen the edges. The synthetic$\to$real recipe exists because perfect ground truth is trivial for a renderer and very costly for real scenes.
 \end{intuition}
@@ -712,8 +763,11 @@ Calibration is measured \emph{offline}, with a target, before any image pair is 
 \item Large rotations between the views distort the rectified images heavily.
 \item A wide baseline lowers the depth error (Theorem~\ref{thm:err}) but changes the appearance of every patch, so local matching fails.
 \end{itemize}
-\photo{34}{4.2cm}{Pair of images with dense colour-coded correspondences under strong camera motion, from MASt3R (slide 34). Caption: ``Dense correspondences where camera motion degrades visual similarity''.}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793641584045.png}
+	\caption{Dense correspondences where camera motion degrades visual similarity}\label{fig:1793641584045}
+\end{figure}
 \subsection{Pointmaps \slr{35}}
 \begin{Definition}[Pointmap]
 A pointmap $\bm X^{a,1}\in\mathbb R^{H\times W\times3}$ assigns to each pixel $\vx_s$ of image $I_a$, $a\in\{1,2\}$, its 3D point $\bm X^{a,1}[\vx_s]\in\mathbb R^3$ expressed in the frame of camera~1 (the second index names the frame). For image~1 with depth $z$, intrinsics $\K_1$ and augmented pixel $\xb_s$:
@@ -778,15 +832,22 @@ A disparity map stores one number per pixel and only makes sense along a rectifi
 \end{tikzpicture}
 \caption{DUSt3R/MASt3R architecture (redrawn from slides~36 and~39; blue = MASt3R additions).}
 \end{figure}
-\photo{36}{3.2cm}{Photos at the left (input images) and right (resulting geometric matching and feature-based fast matching visuals) of the architecture figure (slide 36).}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793641698719.png}
+	\caption{Photos at the left (input images) and right (resulting geometric matching and feature-based fast matching visuals) of the architecture figure }\label{fig:1793641698719}
+\end{figure}
 \begin{intuition}
 The encoder turns each image into a bag of patch tokens independently; the decoders then let the two images ``talk'' through cross-attention so that each token can relate to the other view. The heads translate tokens into per-pixel 3D coordinates. Crucially, both outputs are in the \emph{same} frame, which is what makes 3D matching possible.
 \end{intuition}
 
 \subsection{MASt3R Network Output \slr{37}}
 Per image, the network outputs three dense maps: a pointmap $\Xhat\in\mathbb R^{H\times W\times3}$ (with $\Xhat[i]\in\mathbb R^3$), a confidence $C\in\mathbb R^{H\times W}$ (with $C[i]\in\mathbb R$) and a local descriptor map $F\in\mathbb R^{H\times W\times24}$ (with $F[i]\in\mathbb R^{24}$).
-\photo{37}{3.0cm}{Three 3D-slab sketches: pointmap $\hat X$, confidence $C$ and local feature $F$ with a highlighted pixel (slide 37).}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793641752706.png}
+	\caption{Three 3D-slab sketches: pointmap $\hat X$, confidence $C$ and local feature $F$ with a highlighted pixel }\label{fig:1793641752706}
+\end{figure}
 \subsection{Training Objective and Metric Scale \slr{38}}
 \begin{Definition}[Confidence-weighted regression loss]
 With $\rho,\hat\rho$ the mean distances of the valid ground-truth and predicted points to the origin,
@@ -909,8 +970,11 @@ DUSt3R & 2.677 & 0.805 & 1.741\\ MASt3R & \textbf{0.403} & \textbf{0.344} & \tex
 \end{tabular}
 \end{center}
 DTU: Acc.\ is the mean distance from the reconstruction to the ground truth (structured light), Comp.\ the reverse, Overall their mean.
-\photo{44}{3.4cm}{Grid of object photos/reconstructions from DTU (slide 44, right of the tables).}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793641790131.png}
+	\caption{Grid of object photos/reconstructions from DTU }\label{fig:1793641790131}
+\end{figure}
 \subsection{The Pipeline Revisited \slr{45}}
 \begin{center}\small
 \renewcommand{\arraystretch}{1.2}

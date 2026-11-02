@@ -182,11 +182,26 @@ The procedure on slides 4--7 has four stages (Fig.~\ref{fig:calibflow}):
 \caption{The calibration pipeline of Zhang (2000), redrawn from the description on slides 4--7.}
 \label{fig:calibflow}
 \end{figure}
-
-\imgph[3.2cm]{4}{A known calibration target held in front of several cameras (multi-camera calibration setup).}
-\imgph[3.2cm]{5}{The calibration checkerboard captured in 20 different poses.}
-\imgph[3.2cm]{6}{Corners detected on the target (red crosses, blue squares: extracted corners).}
-\imgph[3.2cm]{7}{Recovered extrinsic parameters: the target planes in the camera frame after joint optimization (Zhang, TPAMI 2000).}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793641898706.png}
+	\caption{A known calibration target held in front of several cameras (multi-camera calibration setup).}\label{fig:1793641898706}
+\end{figure}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793641934366.png}
+	\caption{The calibration checkerboard captured in 20 different poses.}\label{fig:1793641934366}
+\end{figure}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793641961551.png}
+	\caption{Corners detected on the target (red crosses, blue squares: extracted corners).}\label{fig:1793641961551}
+\end{figure}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793641995145.png}
+	\caption{Recovered extrinsic parameters: the target planes in the camera frame after joint optimization (Zhang, TPAMI 2000).}\label{fig:1793641995145}
+\end{figure}
 
 \begin{theorem}{Zhang's constraints from a plane}{zhang}
 Let the target lie in the plane $Z=0$ of the world, so a target point is $(X,Y,0)$. The homography
@@ -246,8 +261,11 @@ The problem is hugely over-determined, which is what makes it accurate.
 \section{Feature Detection and Description \slr{8--20}}
 
 \subsection{Point Features \slr{9--11}}
-\imgph[3.4cm]{9}{Two views of the same mountain scene; red boxes mark patches that are flat sky (uninformative), an edge, and a distinctive corner-like region (image credit: R.~Szeliski).}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793642040354.png}
+	\caption{Two views of the same mountain scene; red boxes mark patches that are flat sky (uninformative), an edge, and a distinctive corner-like region (image credit: R.~Szeliski).}\label{fig:1793642040354}
+\end{figure}
 \begin{definition}{Point feature}{pointfeat}
 A point feature is a pair $(\bm k,\bm f)$: a \emph{keypoint} $\bm k=(x,y)\tr\in\R^2$, the pixel location of a
 salient region, and a \emph{descriptor} $\bm f\in\R^D$ that describes the appearance of the image around $\bm k$.
@@ -266,8 +284,11 @@ The requirements (slide 11): features should be \textbf{invariant} to perspectiv
 3D point should have \textbf{similar vectors independent of pose/viewpoint}. Plain RGB/intensity patches
 do not have this property, so we need something better.
 
-\imgph[3.4cm]{11}{Object recognition with local scale-invariant features: SIFT patches on three known products are found in a cluttered scene (Lowe, ICCV 1999).}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793642082179.png}
+	\caption{Object recognition with local scale-invariant features: SIFT patches on three known products are found in a cluttered scene (Lowe, ICCV 1999).}\label{fig:1793642082179}
+\end{figure}
 \subsection{Scale Invariant Feature Transform (SIFT) \slr{12--15}}
 \paragraph{Detection (slide 12).} SIFT builds a \emph{scale space} by iteratively filtering the image with a Gaussian.
 Adjacent scales are subtracted, yielding \emph{Difference of Gaussian} (DoG) images; interest points
@@ -400,8 +421,11 @@ trust the answer. The ratio test measures that gap. With ratio $0.41$ the closes
 the next; with ratio $0.82$ it is basically a coin flip between two candidates (e.g.\ a repeated window on a facade).
 \end{intuition}
 
-\imgph[3.8cm]{15}{Two images of Notre-Dame with SIFT correspondences (green: correct, red: wrong) (image credits: J.~Hays).}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793642120434.png}
+	\caption{Two images of Notre-Dame with SIFT correspondences (green: correct, red: wrong) (image credits: J.~Hays).}\label{fig:1793642120434}
+\end{figure}
 \subsection{SuperPoint: Learned Interest Points and Descriptors \slr{16--20}}
 \paragraph{Idea (slide 16).} A fully convolutional network computes interest points and their descriptors in one forward pass over the
 full image. Training is \textbf{self-supervised} in three stages (Fig.~\ref{fig:sp3}): (a) a base detector, MagicPoint, is trained on rendered
@@ -428,8 +452,11 @@ Adaptation with $N_h=100$, run twice. Joint training: one random homography per 
 points, a hinge loss for descriptors. Optimization: batch size 32, Adam with learning rate $10^{-3}$, augmentation (Gaussian noise, motion blur,
 brightness), descriptor length $D=256$.
 
-\imgph[3.2cm]{17}{Left: Synthetic Shapes with known corners. Right: MagicPoint against FAST, Harris and Shi--Tomasi corners on noisy images.}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793642154171.png}
+	\caption{Left: Synthetic Shapes with known corners. Right: MagicPoint against FAST, Harris and Shi--Tomasi corners on noisy images.}\label{fig:1793642154171}
+\end{figure}
 \paragraph{Homographic Adaptation (slide 18).}
 \begin{definition}{Covariant detector and Homographic Adaptation}{homadapt}
 Let $f_\theta$ map an image to a heatmap of interest points and let $\tilde{\bm H}(\cdot)$ denote warping an image or heatmap by the homography $\tilde{\bm H}$.
@@ -570,7 +597,11 @@ while SIFT is still best at sub-pixel \emph{localization} (lowest MLE) and at $\
 under an extreme in-plane rotation, a case absent from their training data: a learned method is only as invariant as its training augmentations.
 \end{intuition}
 
-\imgph[3.8cm]{20}{Qualitative matches of SuperPoint, LIFT, SIFT and ORB on six HPatches pairs (green: matches; the fourth row shows an extreme in-plane rotation).}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793642202051.png}
+	\caption{Qualitative matches of SuperPoint, LIFT, SIFT and ORB on six HPatches pairs (green: matches; the fourth row shows an extreme in-plane rotation).}\label{fig:1793642202051}
+\end{figure}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Two-Frame Structure-from-Motion \slr{21--35}}
 
@@ -832,7 +863,11 @@ The intrinsic parameters cannot be directly determined from $\Fm$ alone (a learn
 $\Fm$ is just $\E$ ``dressed'' in the unknown camera matrices: the same geometry, but expressed in pixels. It has 7 degrees of freedom (rank 2 and defined up to scale, $9-1-1$) instead of 5, because two extra parameters are not tied to a rigid motion. It is enough to draw epipolar lines and reject outliers, but you need $\bm K_i$ to convert it into a metric pose.
 \end{intuition}
 
-\imgph[4.0cm]{30}{Epipolar lines for two real images based on the estimated epipolar geometry; corresponding points lie on the corresponding epipolar lines.}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793642241445.png}
+	\caption{Epipolar lines for two real images based on the estimated epipolar geometry; corresponding points lie on the corresponding epipolar lines.}\label{fig:1793642241445}
+\end{figure}
 
 \subsection{Triangulation \slr{31--35}}
 \paragraph{Problem (slide 32).} Given the camera intrinsics and extrinsics, how can we recover 3D geometry? With noisy 2D observations $\xb_1,\xb_2$ the two rays might not intersect; we want the 3D point $\bm x$ that is, in some sense, closest to the two rays (Fig.~\ref{fig:tri}).
@@ -930,8 +965,11 @@ Hold a finger at arm's length and look with one eye at a time: it jumps against 
 \section{Bundle Adjustment \slr{36--54}}
 
 \subsection{Bundle Adjustment \slr{37--39}}
-\imgph[3.8cm]{37}{Photo collection of Notre-Dame (left) and the resulting sparse reconstruction with camera frusta (right) (Snavely, Seitz and Szeliski, SIGGRAPH 2006).}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793642281415.png}
+	\caption{Photo collection of Notre-Dame (left) and the resulting sparse reconstruction with camera frusta (right) (Snavely, Seitz and Szeliski, SIGGRAPH 2006).}\label{fig:1793642281415}
+\end{figure}
 \textbf{Goal:} optimize the reprojection errors (distance between an observed feature and the projected 3D point in the image plane) with respect to the camera parameters and the 3D point cloud.
 
 \begin{definition}{Bundle adjustment}{ba}
@@ -1178,11 +1216,17 @@ The feature matching and reconstruction pipeline (COLMAP, Sch\"onberger and Frah
 \end{figure}
 
 \paragraph{Feature extraction (slide 46).} Detect features (e.g.\ SIFT, SURF, BRISK) in all input images.
-\imgph[3.4cm]{46}{Features detected on a photograph of a monument: boxes show location, scale and orientation of each feature (Sch\"onberger and Frahm, CVPR 2016).}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793642316527.png}
+	\caption{Features detected on a photograph of a monument: boxes show location, scale and orientation of each feature (Sch\"onberger and Frahm, CVPR 2016).}\label{fig:1793642316527}
+\end{figure}
 \paragraph{Feature matching and geometric verification (slide 47).} Find overlapping image pairs and the associated feature correspondences. Candidate matches are verified geometrically, i.e.\ they are kept only if they are consistent with an epipolar geometry or homography (RANSAC).
-\imgph[3.8cm]{47}{Graph of images (nodes) connected when they overlap; example photos of the Trevi fountain at different scales and lighting (Sch\"onberger and Frahm, CVPR 2016).}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793642341810.png}
+	\caption{Graph of images (nodes) connected when they overlap; example photos of the Trevi fountain at different scales and lighting (Sch\"onberger and Frahm, CVPR 2016).}\label{fig:1793642341810}
+\end{figure}
 \paragraph{Initialization (slide 48).}
 \begin{algorithm}{SfM initialization from two views}{init}
 \begin{enumerate}[nosep]
@@ -1223,9 +1267,22 @@ Because the cost is highly non-convex, you ``grow a crystal'': start from a tiny
 \item \textbf{COLMAP} significantly improves accuracy and robustness compared to prior work (slide 53).
 \item COLMAP features a second \textbf{multi-view stereo} stage to obtain dense geometry (slide 54; Sch\"onberger et al., ECCV 2016). A feed-forward network predicts dense depth without known cameras (5.5), whereas MVS needs SfM first.
 \end{itemize}
-\imgph[3.6cm]{52}{Sparse point cloud and camera frusta of the Colosseum reconstructed from internet photos (Agarwal, Snavely, Simon, Seitz and Szeliski, ``Building Rome in a Day'', ICCV 2009).}
-\imgph[3.6cm]{53}{COLMAP sparse reconstruction of a city scene; red marks the camera positions (Sch\"onberger and Frahm, CVPR 2016).}
-\imgph[3.6cm]{54}{Dense COLMAP multi-view stereo reconstruction of a building (Sch\"onberger, Zheng, Frahm and Pollefeys, ECCV 2016).}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793642371656.png}
+	\caption{Sparse point cloud and camera frusta of the Colosseum reconstructed from internet photos (Agarwal, Snavely, Simon, Seitz and Szeliski, ``Building Rome in a Day'', ICCV 2009).}\label{fig:1793642371656}
+\end{figure}
+\begin{figure}[H]
+	\
+	\includegraphics[width=1.0\linewidth]{1793642402299.png}
+	\caption{COLMAP sparse reconstruction of a city scene; red marks the camera positions (Sch\"onberger and Frahm, CVPR 2016).}\label{fig:1793642402299}
+\end{figure}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793642444294.png}
+	\caption{Dense COLMAP multi-view stereo reconstruction of a building (Sch\"onberger, Zheng, Frahm and Pollefeys, ECCV 2016).}\label{fig:1793642444294}
+\end{figure}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Feed-Forward Structure-from-Motion \slr{55--68}}
 
@@ -1299,8 +1356,11 @@ A pointmap is a depth map that already lives in a common world frame: once pixel
 \item \textbf{Output,} in one forward pass of under a second: camera parameters, depth maps, point maps and point tracks for every image.
 \item Without post-processing, it often outperforms methods that refine their output by geometric optimization.
 \end{itemize}
-\imgph[4.2cm]{58}{VGGT takes a set of images of a scene (left) and predicts, in one forward pass, camera poses, a dense point cloud, depth maps and point tracks (Wang et al., CVPR 2025).}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793642489651.png}
+	\caption{VGGT takes a set of images of a scene (left) and predicts, in one forward pass, camera poses, a dense point cloud, depth maps and point tracks (Wang et al., CVPR 2025).}\label{fig:1793642489651}
+\end{figure}
 \subsection{Problem Definition \slr{59}}
 \begin{definition}{VGGT as a function}{vggtdef}
 VGGT is one network with learned weights $\theta$. It takes $N$ images $\bm I_1,\dots,\bm I_N$, each of $H\times W$ pixels, and predicts four outputs per image $i$ (the hat marks a prediction):
@@ -1452,8 +1512,11 @@ VGGT & no & 0.382 & VGGT, depth + camera & \textbf{0.677}\\
 \item Depth unprojected with the predicted cameras beats the point head: the decomposition into depth and camera pays off.
 \item VGGT obtains dense depth without known cameras, whereas COLMAP's MVS needs SfM first (5.4); on DTU, VGGT (no GT cameras) is within $0.01$\,mm of MASt3R, which \emph{uses} the true cameras.
 \end{itemize}
-\imgph[4.5cm]{64}{Input, VGGT (``Ours'') and DUSt3R: one image, two images without overlap, 32 images (reconstruction times shown on the slide).}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793642681545.png}
+	\caption{Input, VGGT (``Ours'') and DUSt3R: one image, two images without overlap, 32 images.}\label{fig:1793642681545}
+\end{figure}
 \subsection{Results: Matching and Tracking \slr{65}}
 ScanNet-1500: 1500 indoor image pairs; pose from the matches through the essential matrix (5.3); AUC of the pose error.
 
@@ -1476,8 +1539,11 @@ RoMa is a dense learned matcher and the strongest baseline. The tracking head is
 \begin{intuition}
 It is a surprising result: a network trained for 3D reconstruction produces features that outperform dedicated two-view matchers, because ``being the same 3D point'' is a stronger training signal than ``looking alike''. Note how the pipeline of Section 5.3 (matches $\to$ $\E$ $\to$ pose) is used here as an \emph{evaluation protocol}, which shows the classical geometry remains the common language.
 \end{intuition}
-\imgph[4.4cm]{65}{Point tracking: VGGT tracks (top) and a dynamic point tracker (CoTracker) given VGGT features (bottom) (Wang et al., CVPR 2025).}
-
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{1793642736632.png}
+	\caption{Point tracking: VGGT tracks (top) and a dynamic point tracker (CoTracker) given VGGT features (bottom) (Wang et al., CVPR 2025).}\label{fig:1793642736632}
+\end{figure}
 \subsection{Bundle Adjustment from VGGT Predictions \slr{66}}
 Use the same objective as before,
 \[

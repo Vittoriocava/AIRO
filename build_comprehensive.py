@@ -109,15 +109,18 @@ PREAMBLE_AMR = r"""
 PREAMBLE_EAI = r"""
 \usepackage[margin=2.4cm]{geometry}
 \usepackage[utf8]{inputenc}
-\usepackage{amsmath,amssymb,amsthm,mathtools,bm}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb,amsthm,mathtools,bm,xparse}
+\usepackage{algpseudocode}
 \usepackage[protrusion=true,expansion=false]{microtype}
 \usepackage{booktabs,array,multirow,colortbl,tabularx,enumitem,float,listings}
 \usepackage[dvipsnames]{xcolor}
 \usepackage{graphicx}
 \usepackage{tikz,pgfplots}
-\usetikzlibrary{arrows.meta,calc,positioning,shapes.geometric,decorations.pathreplacing,fit,backgrounds,patterns}
+\usetikzlibrary{arrows.meta,calc,positioning,shapes.geometric,shapes.symbols,shapes.misc,decorations.pathreplacing,fit,backgrounds,patterns}
 \usepgfplotslibrary{groupplots}
-\pgfplotsset{compat=1.16}
+\pgfplotsset{compat=1.17}
 \usepackage[most]{tcolorbox}
 \usepackage[font=small,labelfont=bf]{caption}
 \usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
@@ -129,7 +132,139 @@ PREAMBLE_EAI = r"""
 \newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
 \newcolumntype{Y}{>{\raggedright\arraybackslash}X}
 
-% ---------- macros (EAI02) ----------
+% ---------- colours ----------
+\definecolor{orng}{RGB}{245,150,40}
+\definecolor{cloud}{RGB}{190,215,240}
+\definecolor{geo}{HTML}{3B5BDB}
+\definecolor{mat}{HTML}{D9603B}
+\definecolor{lig}{HTML}{D89A00}
+\definecolor{obs}{HTML}{D9604A}
+\definecolor{primaryblue}{RGB}{24, 90, 169}
+\definecolor{lightbg}{RGB}{240, 246, 255}
+\definecolor{formalbg}{RGB}{248, 249, 250}
+\definecolor{formalborder}{RGB}{100, 116, 139}
+\definecolor{accentorange}{RGB}{217, 119, 6}
+\definecolor{accentgreen}{RGB}{22, 163, 74}
+\definecolor{accentpurple}{RGB}{126, 34, 206}
+\definecolor{amber}{RGB}{245, 158, 11}
+\definecolor{emerald}{RGB}{16, 185, 129}
+
+% ---------- TikZ styles & functions ----------
+\tikzset{>={Stealth[length=2mm]},
+  box/.style={draw,rounded corners=2pt,align=center,minimum height=0.8cm,fill=blue!8,inner sep=3pt,font=\small},
+  frozen/.style={box,fill=pink!40},
+  arr/.style={-{Stealth[length=2mm]},thick},
+  var/.style={circle,draw,thick,minimum size=7.5mm,inner sep=1pt},
+  fac/.style={rectangle,draw,fill=black,minimum size=2.4mm,inner sep=0pt},
+  blk/.style={rectangle,draw,rounded corners=2pt,thick,align=center,font=\small,inner sep=4pt},
+  star5/.style={star,star points=5,draw,inner sep=1.5pt,minimum size=4mm},
+  pics/slab/.style={code={
+    \draw[fill=white] (0,0) ellipse (0.22 and 0.6);
+    \fill[white] (0,0.6) rectangle (1.4,-0.6);
+    \draw (0,0.6)--(1.4,0.6); \draw (0,-0.6)--(1.4,-0.6);
+    \draw[fill=gray!8] (1.4,0) ellipse (0.22 and 0.6);
+    \foreach \px/\py/\pr in {0.3/0.25/0.07,0.55/-0.3/0.05,0.8/0.2/0.06,1.0/-0.1/0.07,1.2/0.3/0.04,0.45/0.0/0.05,0.95/-0.4/0.05,1.25/-0.25/0.06}
+      \fill[black!65] (\px,\py) circle (\pr);
+  }}
+}
+\pgfmathdeclarefunction{gauss}{3}{\pgfmathparse{1/(sqrt(2*pi*#3))*exp(-((#1-#2)^2)/(2*#3))}}
+
+% ---------- helpers & slide tags ----------
+\NewDocumentCommand{\slides}{m g}{%
+  \IfValueTF{#2}{%
+    \texorpdfstring{\emph{(slides #1--#2)}}{(slides #1-#2)}%
+  }{%
+    \texorpdfstring{\emph{(slides #1)}}{(slides #1)}%
+  }%
+}
+\newcommand{\slideone}[1]{\texorpdfstring{\emph{(slide #1)}}{(slide #1)}}
+\newcommand{\slide}[1]{\slideone{#1}}
+\newcommand{\slr}[1]{\texorpdfstring{\emph{(slides #1)}}{(slides #1)}}
+\newcommand{\slrs}[1]{\texorpdfstring{\emph{(slide #1)}}{(slide #1)}}
+\newcommand{\sref}[1]{\texorpdfstring{\emph{(slides #1)}}{(slides #1)}}
+\newcommand{\sr}[1]{\texorpdfstring{\emph{(#1)}}{(#1)}}
+
+% ---------- placeholders ----------
+\newcommand{\photo}[3][2.8cm]{%
+  \begin{center}\begin{tikzpicture}
+  \node[draw,dashed,thick,fill=gray!8,minimum height=#1,text width=0.8\linewidth,align=center]
+    {\textbf{[PHOTO PLACEHOLDER]}\\ Insert the image from \textbf{slide #2}:\\ \emph{#3}};
+  \end{tikzpicture}\end{center}}
+\newcommand{\phimg}[4]{%
+\begin{tikzpicture}
+\node[draw=black!50,dashed,fill=black!5,minimum height=#3,minimum width=#4,
+      text width=\dimexpr#4-1cm\relax,align=center,inner sep=6pt]
+{\textbf{IMAGE PLACEHOLDER}\\[2pt]Insert the picture from \textbf{slide #1}\\[2pt]{\small\itshape #2}};
+\end{tikzpicture}}
+\newcommand{\imgph}[3][3.4cm]{%
+  \begin{center}\begin{tikzpicture}
+  \node[draw=black!40,dashed,thick,fill=black!3,minimum height=#1,text width=0.86\linewidth,align=center]
+    {\textbf{[SLIDE IMAGE PLACEHOLDER]}\\[2pt]Slide \textbf{#2}: \emph{#3}};
+  \end{tikzpicture}\end{center}}
+\NewDocumentCommand{\slideimg}{m m g}{%
+  \IfValueTF{#3}{%
+    \begin{center}\begin{tikzpicture}
+    \node[draw,dashed,thick,gray!70,fill=gray!7,minimum height=#2,text width=0.86\linewidth,align=center]
+      {\textbf{[IMAGE PLACEHOLDER]}\\ Slide \textbf{#1}: #3};
+    \end{tikzpicture}\end{center}%
+  }{%
+    \begin{center}\begin{tikzpicture}
+    \node[draw,dashed,thick,gray!70,fill=gray!7,minimum height=3.4cm,text width=0.86\linewidth,align=center]
+      {\textbf{[IMAGE PLACEHOLDER]}\\ Slide \textbf{#1}: #2};
+    \end{tikzpicture}\end{center}%
+  }%
+}
+\newcommand{\slideimage}[3][3.8cm]{%
+  \begin{figure}[!htbp]\centering
+  \begin{tikzpicture}
+  \draw[dashed,thick,gray!70,fill=gray!7] (0,0) rectangle (0.86\linewidth,#1);
+  \node[align=center,text=gray!70!black] at (0.43\linewidth,#1/2) {\textbf{[ insert image here ]}\\ taken from \textbf{slide #2}};
+  \end{tikzpicture}\caption{#3}\end{figure}}
+\newcommand{\imgplaceholder}[3][3.6cm]{%
+  \begin{figure}[!htbp]\centering
+  \begin{tikzpicture}
+  \node[draw=black!50,dashed,thick,minimum width=0.85\textwidth,minimum height=#1,align=center,text=black!60,fill=black!3]
+    {\textbf{[ Insert image from slide #2 ]}};
+  \end{tikzpicture}
+  \caption{#3}\end{figure}}
+\newcommand{\imageplaceholder}[3]{%
+  \begin{center}
+  \fcolorbox{formalborder}{white}{%
+    \parbox{0.92\linewidth}{%
+      \vspace{10pt}\centering
+      \textbf{\color{primaryblue}[ IMAGE PLACEHOLDER: #1 ]}\par\vspace{4pt}
+      \small\textit{#2}\par\vspace{4pt}
+      \footnotesize\textbf{#3}
+      \vspace{10pt}
+    }%
+  }\end{center}}
+\newcommand{\intuitionbox}[2]{%
+  \par\medskip\noindent
+  \fcolorbox{primaryblue}{lightbg}{%
+    \parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}{%
+      \vspace{2pt}
+      \textbf{\color{primaryblue}#1}\par\vspace{4pt}
+      #2
+      \vspace{2pt}
+    }%
+  }\par\medskip}
+\newcommand{\formalbox}[1]{%
+  \par\medskip\noindent
+  \fcolorbox{formalborder}{formalbg}{%
+    \parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}{%
+      \vspace{2pt}
+      #1
+      \vspace{2pt}
+    }%
+  }\par\medskip}
+
+\newcommand{\eye}[2]{\begin{scope}[shift={(#1,#2)}]
+  \draw[thick,fill=white] (0,0) to[bend left=45] (0.7,0) to[bend left=45] (0,0);
+  \fill[blue!45] (0.35,0) circle (0.09);\end{scope}}
+\newcommand{\blob}[6]{\begin{scope}[shift={(#1,#2)},rotate=#5]
+  \shade[inner color=#6,outer color=#6!4] (0,0) ellipse (#3 and #4);\end{scope}}
+
+% ---------- math macros ----------
 \newcommand{\R}{\mathbb{R}}
 \newcommand{\E}{\mathbb{E}}
 \newcommand{\Sph}{\mathbb{S}}
@@ -148,47 +283,94 @@ PREAMBLE_EAI = r"""
 \newcommand{\vc}{\bm{c}}
 \newcommand{\vmu}{\bm{\mu}}
 \newcommand{\vk}{\bm{k}}
-\newcommand{\norm}[1]{\lVert #1\rVert}
-\newcommand{\abs}[1]{\lvert #1\rvert}
-\DeclareMathOperator{\dist}{dist}
-\DeclareMathOperator{\clamp}{clamp}
-\DeclareMathOperator{\sign}{sign}
-\DeclareMathOperator*{\argmin}{arg\,min}
-\newcommand{\slides}[1]{\texorpdfstring{\emph{(slides #1)}}{(slides #1)}}
-\newcommand{\slr}[1]{\texorpdfstring{\emph{(slides~#1)}}{(slides #1)}}
-
-% ---------- macros (EAI03) ----------
 \newcommand{\bx}{\bm{x}}
+\newcommand{\by}{\mathbf{y}}
 \newcommand{\bz}{\bm{z}}
+\newcommand{\bu}{\mathbf{u}}
+\newcommand{\bs}{\mathbf{s}}
+\newcommand{\be}{\mathbf{e}}
+\newcommand{\bX}{\mathbf{X}}
+\newcommand{\bH}{\mathbf{H}}
+\newcommand{\bb}{\mathbf{b}}
+\newcommand{\bJ}{\mathbf{J}}
+\newcommand{\bK}{\mathbf{K}}
+\newcommand{\bS}{\mathbf{S}}
+\newcommand{\bG}{\mathbf{G}}
+\newcommand{\bC}{\mathbf{C}}
+\newcommand{\bI}{\mathbf{I}}
+\newcommand{\bT}{\mathbf{T}}
 \newcommand{\beps}{\bm{\epsilon}}
 \newcommand{\pv}{\mathbf{p}}
 \newcommand{\xt}{\tilde{\mathbf{x}}}
+\newcommand{\xb}{\bar{\bm{x}}}
+\newcommand{\vt}{\bm{t}}
 \newcommand{\Rot}{\mathbf{R}}
 \newcommand{\tv}{\mathbf{t}}
 \newcommand{\AbsRel}{\mathrm{AbsRel}}
 \newcommand{\Kinv}{\bm K^{-1}}
+\newcommand{\Rrect}{\bm{R}_{\mathrm{rect}}}
+\newcommand{\wL}{\bm{w}_L}
+\newcommand{\wR}{\bm{w}_R}
+\newcommand{\Xhat}{\hat{\bm{X}}}
+\newcommand{\SE}{\mathrm{SE}(3)}
+\newcommand{\SO}{\mathrm{SO}(3)}
+\newcommand{\se}{\mathfrak{se}(3)}
+\newcommand{\Sim}{\mathrm{Sim}(3)}
+\newcommand{\SL}{\mathrm{SL}(4)}
+\newcommand{\Fm}{\tilde{\bm F}}
+\newcommand{\sk}[1]{[#1]_{\times}}
+\newcommand{\tr}{^{\mathsf T}}
+\newcommand{\T}{^{\mathsf T}}
+\newcommand{\N}{\mathcal{N}}
+\newcommand{\G}{\mathcal{G}}
+\newcommand{\Lc}{\mathcal{L}}
+\newcommand{\abar}{\bar\alpha}
+\newcommand{\dd}{\,\mathrm{d}}
+\newcommand{\dif}{\,\mathrm{d}}
+\newcommand{\bp}{{\bm{p}}}
+\newcommand{\bn}{{\bm{n}}}
+\newcommand{\bc}{{\bm{c}}}
+\newcommand{\bom}{{\bm{\omega}}}
+\newcommand{\br}{{\bm{r}}}
+\newcommand{\x}{{\bm{x}}}
+\newcommand{\y}{\bm{y}}
+\newcommand{\z}{\bm{z}}
+\newcommand{\w}{{\bm{\omega}}}
+\newcommand{\wi}{{\bm{\omega}_i}}
+\newcommand{\wo}{{\bm{\omega}_o}}
+\newcommand{\n}{{\bm{n}}}
+\newcommand{\om}{\boldsymbol{\omega}}
+\newcommand{\cc}{\boldsymbol{c}}
+\newcommand{\xx}{\boldsymbol{x}}
+\newcommand{\fr}{f_r}
+\newcommand{\Lo}{L_o}
+\newcommand{\Li}{L_i}
+\newcommand{\Le}{L_e}
+\newcommand{\cosp}{(\n^{\mathsf T}\wi)}
+\newcommand{\pdv}[2]{\frac{\partial #1}{\partial #2}}
 
-\newcommand{\photo}[3][2.8cm]{%
-  \begin{center}\begin{tikzpicture}
-  \node[draw,dashed,thick,fill=gray!8,minimum height=#1,text width=0.8\linewidth,align=center]
-    {\textbf{[PHOTO PLACEHOLDER]}\\ Insert the image from \textbf{slide #2}:\\ \emph{#3}};
-  \end{tikzpicture}\end{center}}
-\newcommand{\phimg}[4]{%
-\begin{tikzpicture}
-\node[draw=black!50,dashed,fill=black!5,minimum height=#3,minimum width=#4,
-      text width=\dimexpr#4-1cm\relax,align=center,inner sep=6pt]
-{\textbf{IMAGE PLACEHOLDER}\\[2pt]Insert the picture from \textbf{slide #1}\\[2pt]{\small\itshape #2}};
-\end{tikzpicture}}
+\NewDocumentCommand{\norm}{m g}{\lVert #1\rVert\IfValueT{#2}{_{#2}}}
+\newcommand{\abs}[1]{\lvert #1\rvert}
 
-\tikzset{box/.style={draw,rounded corners=2pt,align=center,minimum height=0.8cm,fill=blue!8,inner sep=3pt,font=\small},
-  frozen/.style={box,fill=pink!40},
-  arr/.style={-{Stealth[length=2mm]},thick}}
+\DeclareMathOperator{\dist}{dist}
+\DeclareMathOperator{\clamp}{clamp}
+\DeclareMathOperator{\sign}{sign}
+\DeclareMathOperator{\softmax}{softmax}
+\DeclareMathOperator{\NN}{NN}
+\DeclareMathOperator{\SSD}{SSD}
+\DeclareMathOperator{\ZNCC}{ZNCC}
+\DeclareMathOperator{\diag}{diag}
+\DeclareMathOperator{\vecop}{vec}
+\DeclareMathOperator{\sigmoid}{sigmoid}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
 
 % ---------- theorem environments ----------
 \theoremstyle{definition}
 \newtheorem{definition}{Definition}[section]
 \newtheorem{example}[definition]{Example}
-\newtheorem{algorithm}[definition]{Algorithm}
+\newtheorem{algorithm}{Algorithm}[section]
+\newtheorem{algorithm_env}[definition]{Algorithm}
 \theoremstyle{plain}
 \newtheorem{theorem}[definition]{Theorem}
 \newtheorem{lemma}[definition]{Lemma}
@@ -201,6 +383,7 @@ PREAMBLE_EAI = r"""
 \tcolorboxenvironment{definition}{thmbox,colback=green!4!white,colframe=green!45!black}
 \tcolorboxenvironment{example}{thmbox,colback=gray!7!white,colframe=gray!60!black}
 \tcolorboxenvironment{algorithm}{thmbox,colback=teal!5!white,colframe=teal!55!black}
+\tcolorboxenvironment{algorithm_env}{thmbox,colback=teal!5!white,colframe=teal!55!black}
 \tcolorboxenvironment{theorem}{thmbox,colback=orange!6!white,colframe=orange!70!black}
 \tcolorboxenvironment{lemma}{thmbox,colback=orange!6!white,colframe=orange!70!black}
 \tcolorboxenvironment{proposition}{thmbox,colback=orange!6!white,colframe=orange!70!black}
@@ -211,27 +394,16 @@ PREAMBLE_EAI = r"""
   colbacktitle=blue!60!black,fonttitle=\bfseries,title=Intuition,
   boxrule=0.6pt,arc=2pt,left=6pt,right=6pt,top=4pt,bottom=4pt,before skip=9pt,after skip=12pt}
 
+\newtcolorbox{beyond}{enhanced,breakable,colback=white,colframe=gray!60,
+  fonttitle=\bfseries\small,title={Beyond the slides},boxrule=0.6pt,arc=2pt,
+  left=6pt,right=6pt,top=3pt,bottom=3pt,before skip=8pt,after skip=10pt}
+
 \lstset{basicstyle=\ttfamily\small,language=Python,frame=none,backgroundcolor=\color{gray!8},
   breaklines=true,columns=fullflexible,keepspaces=true,showstringspaces=false,
   commentstyle=\color{green!40!black},keywordstyle=\color{blue!70!black},aboveskip=8pt,belowskip=8pt}
 
 \pgfplotsset{every axis/.append style={width=0.86\linewidth,height=6.2cm,grid=major,
   grid style={gray!25},legend style={font=\small},label style={font=\small},tick label style={font=\small}}}
-
-% ---------- boxed environments (EAI04) ----------
-\newtheorem{algorithmx}[definition]{Algorithm}
-\newcommand{\newboxedthm}[3]{%
-  \NewDocumentEnvironment{#1}{o}{%
-    \begin{tcolorbox}[enhanced,breakable,boxrule=0.6pt,arc=2pt,colframe=#3!65!black,colback=#3!5]%
-    \IfNoValueTF{##1}{\begin{#2}}{\begin{#2}[##1]}}{%
-    \end{#2}\end{tcolorbox}}}
-\newboxedthm{Definition}{definition}{gray}
-\newboxedthm{Lemma}{lemma}{orange}
-\newboxedthm{Theorem}{theorem}{red}
-\newboxedthm{Proposition}{proposition}{teal}
-\newboxedthm{Corollary}{corollary}{purple}
-\newboxedthm{Example}{example}{olive}
-\newboxedthm{Algorithm}{algorithmx}{brown}
 """
 
 PREAMBLE_NN = r"""
@@ -430,6 +602,26 @@ def extract_body(tex_path: Path) -> str:
     # EAI source files refer to figures from the repository root.
     body = re.sub(r'(?<=\{)tex/EAI0[234]/', '', body)
 
+    if tex_path.name == "EAI06.tex":
+        body = re.sub(r"\\bm\b", r"\\mathbf{m}", body)
+        body = re.sub(r"\\tr\b", r"\\operatorname{tr}", body)
+
+    envs = {
+        "definition": "def",
+        "theorem": "thm",
+        "lemma": "lem",
+        "proposition": "prop",
+        "corollary": "cor",
+        "example": "ex",
+        "algorithm": "alg",
+    }
+    for env, pfx in envs.items():
+        pattern = rf"\\begin\{{({env})\}}\{{([^}}]+)\}}\{{([^}}]+)\}}"
+        body = re.sub(pattern, lambda m, l=env, p=pfx: f"\\begin{{{l}}}[{m.group(2)}]\\label{{{p}:{m.group(3)}}}", body, flags=re.IGNORECASE)
+        CapEnv = env.capitalize()
+        body = re.sub(rf"\\begin\{{{CapEnv}\}}", rf"\\begin{{{env}}}", body)
+        body = re.sub(rf"\\end\{{{CapEnv}\}}", rf"\\end{{{env}}}", body)
+
     return body.strip()
 
 
@@ -501,6 +693,8 @@ def build_document(subject: str, tex_files: list[Path], output_dir: Path) -> Pat
         lines.append(f"% {'='*70}")
         lines.append(f"% {label}")
         lines.append(f"% {'='*70}")
+        lines.append(r"\setcounter{section}{0}")
+        lines.append(r"\renewcommand{\thesection}{\arabic{section}}")
         lines.append(f"\\part{{{label}}}")
         lines.append("")
         lines.append(body)
