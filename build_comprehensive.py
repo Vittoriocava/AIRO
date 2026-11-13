@@ -35,29 +35,134 @@ YEAR   = "A.Y.~2026/27"
 PREAMBLE_AMR = r"""
 \usepackage[margin=2.4cm]{geometry}
 \usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
 \usepackage[expansion=false]{microtype}
-\usepackage{amsmath,amssymb,amsthm}
-\usepackage{booktabs,array,enumitem,xcolor,float}
+\usepackage{amsmath,amssymb,amsthm,mathtools,bm}
+\usepackage{booktabs,array,tabularx,enumitem,xcolor,float}
+\usepackage{cancel}
+\usepackage{algpseudocode}
+\usepackage{caption}
 \usepackage{graphicx}
 \usepackage{tikz}
-\usetikzlibrary{arrows.meta,calc,decorations.markings,angles,quotes,positioning,patterns}
+\usetikzlibrary{arrows.meta,calc,decorations.markings,decorations.pathreplacing,angles,quotes,positioning,patterns,fit,backgrounds,shapes.geometric}
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.16}
+\usepgfplotslibrary{groupplots}
 \usepackage[most]{tcolorbox}
 \usepackage[colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+
+\pdfstringdefDisableCommands{%
+  \def\bm#1{#1}%
+  \def\boldsymbol#1{#1}%
+  \def\mathbf#1{#1}%
+  \def\vect#1{#1}%
+}
 
 \setlength{\parskip}{4pt}
 \setlength{\parindent}{0pt}
 
+% ---------- math operators ----------
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\spn}{span}
+\DeclareMathOperator{\Ker}{\mathcal{N}}
+\DeclareMathOperator{\ad}{ad}
+\DeclareMathOperator{\sign}{sign}
+\DeclareMathOperator{\sgn}{sgn}
+\DeclareMathOperator{\atan}{atan2}
+\DeclareMathOperator{\atantwo}{atan2}
+\DeclareMathOperator{\diag}{diag}
+\DeclareMathOperator{\sinc}{sinc}
+\DeclareMathOperator{\cov}{cov}
+
 % ---------- macros ----------
 \newcommand{\R}{\mathbb{R}}
+\newcommand{\Rn}{\mathbb{R}}
 \newcommand{\W}{\mathcal{W}}
 \newcommand{\C}{\mathcal{C}}
+\newcommand{\N}{\mathcal{N}}
+\newcommand{\Null}{\mathcal{N}}
 \newcommand{\SO}{\mathrm{SO}}
 \newcommand{\SE}{\mathrm{SE}}
 \newcommand{\Sph}{\mathbb{S}}
 \newcommand{\norm}[1]{\lVert #1\rVert}
 \newcommand{\pts}[1]{\emph{(notes p.~#1)}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\tp}{^{\top}}
+\newcommand{\pinv}{^{\dagger}}
+
+% AMR03 / AMR04 derivatives & constraints
+\newcommand{\dq}{\dot q}
+\newcommand{\dotq}{\dot q}
+\newcommand{\LB}[2]{[#1,#2]}
+\newcommand{\Dist}{\Delta}
+\newcommand{\AccDist}{\Delta_A}
+
+% AMR05 chained form vectors
+\newcommand{\qv}{\bm{q}}
+\newcommand{\zv}{\bm{z}}
+\newcommand{\wv}{\bm{w}}
+\newcommand{\vv}{\bm{v}}
+
+% AMR06 / AMR07 planning & variables
+\newcommand{\q}{\boldsymbol{q}}
+\newcommand{\qi}{\boldsymbol{q}_i}
+\newcommand{\qf}{\boldsymbol{q}_f}
+\newcommand{\ut}{\tilde{\boldsymbol{u}}}
+\newcommand{\vt}{\tilde v}
+\newcommand{\wt}{\tilde\omega}
+\newcommand{\wwt}{\tilde w}
+\newcommand{\g}{\boldsymbol{g}}
+\newcommand{\z}{\boldsymbol{z}}
+\newcommand{\Tm}{\boldsymbol{T}}
+\newcommand{\bb}{\boldsymbol{b}}
+
+% AMR08 trajectory tracking
+\newcommand{\vect}[1]{\bm{#1}}
+\newcommand{\vd}{v_d}
+\newcommand{\omd}{\omega_d}
+\newcommand{\pd}{\vect{p}_d}
+\newcommand{\qd}{\vect{q}_d}
+\newcommand{\Acl}{\vect{A}_{cl}}
+
+% AMR09 mobile manipulators
+\newcommand{\qbase}{\bm{q}_b}
+\newcommand{\qarm}{\bm{q}_m}
+\newcommand{\ubase}{\bm{u}_b}
+\newcommand{\uarm}{\bm{u}_m}
+\newcommand{\Gbase}{\bm{G}_b}
+\newcommand{\Jbase}{\bm{J}_b}
+\newcommand{\Jarm}{\bm{J}_m}
+\newcommand{\Jmm}{\bm{J}_{mm}}
+\newcommand{\ye}{\bm{y}_e}
+\newcommand{\sg}{\bm{G}}
+\newcommand{\grad}{\nabla_{\!\bm{q}}}
+
+% AMR10 localization & EKF
+\newcommand{\Ts}{T_s}
+\newcommand{\hx}{\hat{\boldsymbol{x}}}
+\newcommand{\hq}{\hat{\boldsymbol{q}}}
+\newcommand{\bx}{\boldsymbol{x}}
+\newcommand{\bq}{\boldsymbol{q}}
+\newcommand{\bu}{\boldsymbol{u}}
+\newcommand{\by}{\boldsymbol{y}}
+\newcommand{\bv}{\boldsymbol{v}}
+\newcommand{\bw}{\boldsymbol{w}}
+\newcommand{\bnu}{\boldsymbol{\nu}}
+\newcommand{\mA}{\mathbf{A}}
+\newcommand{\mB}{\mathbf{B}}
+\newcommand{\mC}{\mathbf{C}}
+\newcommand{\mF}{\mathbf{F}}
+\newcommand{\mH}{\mathbf{H}}
+\newcommand{\mP}{\mathbf{P}}
+\newcommand{\mR}{\mathbf{R}}
+\newcommand{\mS}{\mathbf{S}}
+\newcommand{\mV}{\mathbf{V}}
+\newcommand{\mW}{\mathbf{W}}
+\newcommand{\mI}{\mathbf{I}}
+\newcommand{\slides}[1]{\texorpdfstring{\hspace{0.5em}{\normalfont\small\emph{(#1)}}}{}}
+\def\mx{3.3}
+\def\my{2.6}
 
 % TikZ helpers (AMR02)
 \newcommand{\photobox}[2]{\fbox{\parbox[c][#1][c]{0.29\linewidth}{\centering
@@ -78,6 +183,22 @@ PREAMBLE_AMR = r"""
 \newcommand{\ghostwheel}[2]{\begin{scope}[shift={(#1)},rotate=#2]
   \draw[dashed,gray] (-0.3,-0.07) rectangle (0.3,0.07);\end{scope}}
 
+% TikZ helpers (AMR04)
+\newcommand{\wheel}[3]{\begin{scope}[shift={#1},rotate=#2]
+  \draw[fill=#3,rounded corners=1pt] (-0.4,-0.12) rectangle (0.4,0.12);\end{scope}}
+
+% TikZ helpers (AMR08)
+\tikzset{
+  >={Stealth[length=2mm]},
+  blk/.style={draw,rectangle,minimum height=8mm,minimum width=16mm,align=center,font=\footnotesize,fill=blue!6,inner sep=3pt},
+  sm/.style={draw,circle,inner sep=0pt,minimum size=5mm,font=\scriptsize},
+  lab/.style={font=\scriptsize,inner sep=1pt},
+  dot/.style={circle,fill,inner sep=1pt},
+}
+
+% TikZ helpers (AMR11)
+\newcommand{\robot}[3][fill=white]{\begin{scope}[shift={(#2)},rotate=#3]\draw[#1,thick] (0.24,0)--(-0.16,0.15)--(-0.16,-0.15)--cycle;\end{scope}}
+
 % ---------- theorem environments ----------
 \theoremstyle{definition}
 \newtheorem{definition}{Definition}[section]
@@ -88,6 +209,8 @@ PREAMBLE_AMR = r"""
 \newtheorem{theorem}[definition]{Theorem}
 \newtheorem{proposition}[definition]{Proposition}
 \newtheorem{corollary}[definition]{Corollary}
+\theoremstyle{remark}
+\newtheorem*{remark}{Remark}
 
 \tcbset{
   thmbox/.style={enhanced,breakable,colback=gray!4,colframe=gray!60!black,
@@ -100,10 +223,29 @@ PREAMBLE_AMR = r"""
 \tcolorboxenvironment{proposition}{thmbox}
 \tcolorboxenvironment{theorem}{thmbox}
 \tcolorboxenvironment{corollary}{thmbox}
+\tcolorboxenvironment{remark}{thmbox}
 
-\newtcolorbox{intuition}{enhanced,breakable,colback=blue!5,colframe=blue!55!black,
-  fonttitle=\bfseries,title={Intuition},boxrule=0.6pt,arc=2pt,
+\newtcolorbox{intuition}[1][Intuition]{enhanced,breakable,colback=blue!5,colframe=blue!55!black,
+  fonttitle=\bfseries,title={#1},boxrule=0.6pt,arc=2pt,
   left=6pt,right=6pt,top=3pt,bottom=3pt}
+
+\newtcolorbox{problem}[1]{
+  breakable, enhanced,
+  colback=black!4!white, colframe=black!65,
+  fonttitle=\bfseries, title={#1},
+  left=6pt,right=6pt,top=4pt,bottom=4pt,
+  before skip=8pt, after skip=12pt
+}
+\newtcolorbox{algbox}[1]{
+  breakable, enhanced,
+  colback=gray!5!white, colframe=black!60,
+  fonttitle=\bfseries, title={#1},
+  left=5pt,right=5pt,
+  before skip=10pt, after skip=10pt
+}
+\newtcolorbox{placeholder}[1]{enhanced,colback=white,colframe=red!60!black,boxrule=0.8pt,
+  fonttitle=\bfseries\small,coltitle=red!60!black,colbacktitle=white,
+  title={IMAGE PLACEHOLDER},halign=center,valign=center,height=6.2cm,before skip=10pt,after skip=10pt}
 """
 
 PREAMBLE_EAI = r"""
@@ -606,6 +748,9 @@ def extract_body(tex_path: Path) -> str:
         body = re.sub(r"\\bm\b", r"\\mathbf{m}", body)
         body = re.sub(r"\\tr\b", r"\\operatorname{tr}", body)
 
+    if tex_path.name == "AMR11.tex":
+        body = re.sub(r"\\slides\{", r"\\slides{slides ", body)
+
     envs = {
         "definition": "def",
         "theorem": "thm",
@@ -747,6 +892,9 @@ def compile_tex(tex_path: Path) -> bool:
 
 def main():
     subjects = find_subjects_with_tex(BASE_DIR)
+    if len(sys.argv) > 1:
+        chosen = [s.upper() for s in sys.argv[1:]]
+        subjects = [s for s in subjects if s.upper() in chosen]
     print(f"Found subjects with tex/ folders: {subjects}\n")
     
     results = {}
