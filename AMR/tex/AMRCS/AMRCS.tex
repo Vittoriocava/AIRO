@@ -1,0 +1,328 @@
+\documentclass[10pt, a4paper]{article}
+\usepackage[a4paper, margin=1.5cm]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{tgheros}
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage{amsmath, amssymb}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage[table]{xcolor}
+\usepackage{enumitem}
+\usepackage{hyperref}
+
+\definecolor{primary}{HTML}{1B365D}
+\definecolor{accent}{HTML}{006699}
+\definecolor{bglight}{HTML}{F0F4F8}
+\definecolor{bordergray}{HTML}{CBD5E1}
+
+\setlist[itemize]{leftmargin=1.2em, itemsep=2pt, topsep=3pt}
+\setlist[enumerate]{leftmargin=1.4em, itemsep=2pt, topsep=3pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+
+\begin{document}
+
+\begin{center}
+    {\Large \textbf{\textcolor{primary}{AUTONOMOUS AND MOBILE ROBOTICS (AMR)}}} \\[2pt]
+    {\normalsize \textbf{Complete Formula \& Algorithm Cheat Sheet for Class Tests}} \\[2pt]
+    {\footnotesize Based on Lecture Notes of Prof. Giuseppe Oriolo — Sapienza Universit\`a di Roma}
+\end{center}
+\vspace{2pt}
+\hrule height 1.2pt
+\vspace{6pt}
+
+\section*{1. Kinematic Constraints, Models \& Differential Flatness}
+
+\begin{itemize}
+    \item \textbf{Pfaffian Constraints:} $A^T(q)\dot{q} = 0$, where $q \in \mathbb{R}^n$ is the generalized configuration and $A(q) \in \mathbb{R}^{n \times k}$ collects $k$ independent constraints.
+    \item \textbf{Kinematic Model (KM):} $\dot{q} = G(q)u = \sum_{i=1}^{m} g_i(q)u_i$, where the columns of $G(q) \in \mathbb{R}^{n \times m}$ form a basis of $\mathcal{N}(A^T(q))$ ($m = n - k$). It is a \textbf{driftless} system ($u = 0 \implies \dot{q} = 0$).
+    \item \textbf{Geometric Model (GM):} Space-time separation $q(t) = q(s(t))$ with $(\cdot)' = \frac{d(\cdot)}{ds}$:
+    \[
+        q' = G(q)\tilde{u}, \qquad u(t) = \tilde{u}(s)\dot{s}(t)
+    \]
+\end{itemize}
+
+\begin{table}[h!]
+\centering
+\small
+\renewcommand{\arraystretch}{1.25}
+\begin{tabularx}{\textwidth}{@{} l l X l @{}}
+\toprule
+\rowcolor{bglight}
+\textbf{Robot Model} & \textbf{State $q$ \& Inputs $u$} & \textbf{Kinematic Equations $\dot{q} = G(q)u$} & \textbf{Key Properties / Constraints} \\
+\midrule
+\textbf{Unicycle} & $q = (x, y, \theta)^T$ & $\dot{x} = v\cos\theta, \quad \dot{y} = v\sin\theta, \quad \dot{\theta} = \omega$ & $n=3, k=1$: $\dot{x}\sin\theta - \dot{y}\cos\theta = 0$ \\
+($m=2$) & $u = (v, \omega)^T$ & $g_1 = [\cos\theta, \sin\theta, 0]^T, \quad g_2 = [0, 0, 1]^T$ & Flat outputs: $y_f = (x, y)^T$ \\
+\midrule
+\textbf{Differential Drive} & $q = (x, y, \theta)^T$ & Equivalent to unicycle via invertible linear map: & Wheel radius $r$, track width $d$ \\
+($m=2$) & $u = (\omega_R, \omega_L)^T$ & $v = \frac{r(\omega_R + \omega_L)}{2}, \qquad \omega = \frac{r(\omega_R - \omega_L)}{d}$ & Pure rolling on both wheels \\
+\midrule
+\textbf{Bicycle (RWD)} & $q = (x, y, \theta, \phi)^T$ & $\dot{x} = u_1\cos\theta, \quad \dot{y} = u_1\sin\theta$ & $n=4, k=2$; wheelbase $\ell$; $(x,y)$ on rear wheel \\
+($m=2$) & $u = (u_1, u_2)^T$ & $\dot{\theta} = \frac{u_1}{\ell}\tan\phi, \quad \dot{\phi} = u_2$ & Singularity at $\phi = \pm \pi/2$; flat outputs: $(x, y)$ \\
+\midrule
+\textbf{Bicycle (FWD)} & $q = (x_f, y_f, \theta, \phi)^T$ & $\dot{x}_f = v\cos(\theta+\phi), \quad \dot{y}_f = v\sin(\theta+\phi)$ & $(x_f, y_f)$ on front wheel; $(x_f, y_f)$ \textbf{not} flat \\
+($m=2$) & $u = (v, \omega)^T$ & $\dot{\theta} = \frac{v}{\ell}\sin\phi, \quad \dot{\phi} = \omega$ & Rear wheel $(x_f - \ell\cos\theta, y_f - \ell\sin\theta)$ is flat \\
+\midrule
+\textbf{Hopping Robot} & $q = (\phi, \ell, \theta)^T$ & $\dot{\phi} = u_1, \quad \dot{\ell} = u_2$ & Angular momentum conservation ($k=1$) \\
+(Flight phase) & $u = (u_1, u_2)^T$ & $\dot{\theta} = -\frac{m(d+\ell)^2}{J + m(d+\ell)^2} u_1$ & Flat for $d=0$ with outputs $(\phi, \theta)$ \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection*{Differential Flatness \& Reconstruction Formulas}
+A system is \textit{differentially flat} with output $y_f \in \mathbb{R}^m$ if state $q$ and inputs $u$ can be expressed \textbf{algebraically} (without integration) as functions of $y_f$ and a finite number of its derivatives: $q = \alpha(y_f, \dot{y}_f, \dots, y_f^{(r)})$, $u = \beta(y_f, \dot{y}_f, \dots, y_f^{(r+1)})$.
+\begin{itemize}
+    \item \textbf{Unicycle Reconstruction from $(x(s), y(s))$ ($x'^2 + y'^2 \neq 0$):}
+    \[
+        \theta(s) = \text{Atan2}\big(k\,y'(s), \; k\,x'(s)\big) \quad (k = \pm 1), \qquad \tilde{v}(s) = k\sqrt{x'(s)^2 + y'(s)^2}, \qquad \tilde{\omega}(s) = \frac{y''(s)x'(s) - x''(s)y'(s)}{x'(s)^2 + y'(s)^2}
+    \]
+    \item \textbf{RWD Bicycle Reconstruction from $(x(s), y(s))$:} $\theta(s)$ and $\tilde{u}_1(s) = \tilde{v}(s)$ are identical to the unicycle; steering angle and velocity follow from $\tan\phi = \ell\frac{\tilde{\omega}}{\tilde{u}_1} = \ell\frac{y''x' - x''y'}{(x'^2 + y'^2)^{3/2}}$ and $\tilde{u}_2(s) = \phi'(s)$.
+\end{itemize}
+
+\section*{2. Nonlinear Controllability (Lie Brackets \& Chow's Theorem)}
+
+\begin{itemize}
+    \item \textbf{Lie Bracket:} Given two smooth vector fields $g_1(x), g_2(x) \in \mathbb{R}^n$:
+    \[
+        [g_1, g_2](x) = \frac{\partial g_2}{\partial x}g_1(x) - \frac{\partial g_1}{\partial x}g_2(x)
+    \]
+    \textit{Geometric interpretation:} Executing $+g_1, +g_2, -g_1, -g_2$ for small intervals $\varepsilon$ yields a net displacement $\Delta x = \varepsilon^2 [g_1, g_2](x) + O(\varepsilon^3)$.
+    \item \textbf{Chow's Theorem (Accessibility / Controllability):} A driftless system $\dot{q} = \sum_{i=1}^m g_i(q)u_i$ is \textbf{controllable} if the accessibility distribution $\Delta_A = \text{span}\{g_1, \dots, g_m, [g_i, g_j], [g_i, [g_j, g_k]], \dots\}$ satisfies $\dim \Delta_A(q) = n$ for all $q$.
+    \item \textbf{Standard Exam Brackets:}
+    \begin{itemize}
+        \item \textit{Unicycle:} $[g_1, g_2] = [\sin\theta, -\cos\theta, 0]^T$ (sideways slip). $\det[g_1, g_2, [g_1, g_2]] = -1 \neq 0 \implies \text{rank} = 3$.
+        \item \textit{RWD Bicycle:} $[g_1, g_2] = [0, 0, -\frac{1}{\ell\cos^2\phi}, 0]^T$ (pure rotation), $[g_1, [g_1, g_2]] = [-\frac{\sin\theta}{\ell\cos^2\phi}, \frac{\cos\theta}{\ell\cos^2\phi}, 0, 0]^T$ (lateral translation). $\text{rank} = 4$ for $\phi \neq \pm \pi/2$.
+        \item \textit{FWD Bicycle:} $[g_1, g_2] = [\sin(\theta+\phi), -\cos(\theta+\phi), -\frac{\cos\phi}{\ell}, 0]^T$, $[g_1, [g_1, g_2]] = [-\frac{\sin\theta}{\ell}, \frac{\cos\theta}{\ell}, 0, 0]^T$. $\det = 1/\ell^2 \neq 0 \implies \text{rank} = 4$ globally.
+    \end{itemize}
+\end{itemize}
+
+\section*{3. Chained Forms \& Motion Planning}
+
+\begin{itemize}
+    \item \textbf{$(2,n)$ Chained Form:} $\dot{z}_1 = w_1, \quad \dot{z}_2 = w_2, \quad \dot{z}_3 = z_2 w_1, \quad \dots, \quad \dot{z}_n = z_{n-1} w_1$.
+    \item \textbf{Unicycle $\to (2,3)$ Chained Form:}
+    \[
+        z_1 = \theta, \quad z_2 = x\cos\theta + y\sin\theta, \quad z_3 = x\sin\theta - y\cos\theta \quad \Longleftrightarrow \quad w_1 = \omega, \quad w_2 = v - z_3\omega
+    \]
+    \item \textbf{RWD Bicycle $\to (2,4)$ Chained Form ($|\theta| < \pi/2, |\phi| < \pi/2$):}
+    \[
+        z_1 = x, \quad z_2 = \frac{\tan\phi}{\ell\cos^3\theta}, \quad z_3 = \tan\theta, \quad z_4 = y, \qquad w_1 = u_1\cos\theta, \quad w_2 = \frac{3\tan^2\phi\sin\theta}{\ell^2\cos^4\theta}u_1 + \frac{1}{\ell\cos^3\theta\cos^2\phi}u_2
+    \]
+    \item \textbf{Sinusoidal Steering on $(2,3)$ Chained Form:} Applying $w_1(t) = a\sin(\omega t)$, $w_2(t) = b\cos(\omega t)$ over one full period $T = 2\pi/\omega$ returns $z_1, z_2$ to their starting values while shifting $z_3$ by:
+    \[
+        \Delta z_3 = \oint z_2\,dz_1 = \frac{ab\pi}{\omega^2}
+    \]
+    \item \textbf{Timing Law Feasibility ($s = s(t)$, $\dot{s} > 0$):} Given geometric inputs $\tilde{v}(s), \tilde{\omega}(s)$ and bounds $|v| \le v_{\max}, |\omega| \le \omega_{\max}$:
+    \[
+        \dot{s}(t) \le \min\left\{ \frac{v_{\max}}{|\tilde{v}(s(t))|}, \; \frac{\omega_{\max}}{|\tilde{\omega}(s(t))|} \right\}
+    \]
+\end{itemize}
+
+\section*{4. Motion Control (Trajectory Tracking \& Regulation)}
+
+\subsection*{A. Trajectory Tracking (Reference $q_d(t) = (x_d, y_d, \theta_d)^T$ with $v_d, \omega_d$)}
+\begin{enumerate}
+    \item \textbf{Approximate Linearization (State Error Feedback):}
+    Rotated error in robot frame:
+    \[
+        \begin{pmatrix} e_1 \\ e_2 \\ e_3 \end{pmatrix} = \begin{pmatrix} \cos\theta & \sin\theta & 0 \\ -\sin\theta & \cos\theta & 0 \\ 0 & 0 & 1 \end{pmatrix} \begin{pmatrix} x_d - x \\ y_d - y \\ \theta_d - \theta \end{pmatrix}
+    \]
+    Control law (locally exponentially stabilizing if $v_d, \omega_d$ do not both vanish):
+    \[
+        v = v_d\cos e_3 + k_1 e_1, \qquad \omega = \omega_d + k_2 v_d e_2 + k_3 \sin e_3 \quad (\text{or linear: } \omega = \omega_d + k_2 e_2 + k_3 e_3)
+    \]
+    \textit{Pole placement gains (with desired $\zeta, a > 0$):} $k_1 = k_3 = 2\zeta a$, $k_2 = \frac{a^2 - \omega_d^2}{v_d}$ (requires $v_d \neq 0$).
+    \item \textbf{Exact I/O Linearization via Static Feedback (Off-axis Point $B$):}
+    Define $y_B = [x + b\cos\theta, \; y + b\sin\theta]^T$ with $b \neq 0$. Differentiating yields $\dot{y}_B = T(\theta)[v, \omega]^T$:
+    \[
+        T(\theta) = \begin{pmatrix} \cos\theta & -b\sin\theta \\ \sin\theta & b\cos\theta \end{pmatrix}, \quad T^{-1}(\theta) = \begin{pmatrix} \cos\theta & \sin\theta \\ -\frac{\sin\theta}{b} & \frac{\cos\theta}{b} \end{pmatrix}, \qquad \begin{pmatrix} v \\ \omega \end{pmatrix} = T^{-1}(\theta)\Big(\dot{y}_{B,d} + K_p(y_{B,d} - y_B)\Big)
+    \]
+    \textit{Internal dynamics:} $\theta$ evolves freely without affecting $y_B$; zero dynamics is stable if $v_d > 0$ (unstable if $v_d < 0$).
+    \item \textbf{Exact I/O Linearization via Dynamic Feedback (Exact Point $(x,y)$):}
+    Add an integrator on $v$: $\dot{v} = a$ (extended state $\xi = v$, new inputs $[a, \omega]^T$). Differentiating $y = [x,y]^T$ twice gives:
+    \[
+        \begin{pmatrix} \ddot{x} \\ \ddot{y} \end{pmatrix} = \begin{pmatrix} \cos\theta & -v\sin\theta \\ \sin\theta & v\cos\theta \end{pmatrix} \begin{pmatrix} a \\ \omega \end{pmatrix} = \begin{pmatrix} w_1 \\ w_2 \end{pmatrix} \implies \begin{pmatrix} a \\ \omega \end{pmatrix} = \begin{pmatrix} \cos\theta & \sin\theta \\ -\frac{\sin\theta}{v} & \frac{\cos\theta}{v} \end{pmatrix} \begin{pmatrix} w_1 \\ w_2 \end{pmatrix}
+    \]
+    with $w = \ddot{p}_d + K_d(\dot{p}_d - \dot{p}) + K_p(p_d - p)$, where $\dot{p} = [v\cos\theta, v\sin\theta]^T$. Singular at $v = 0$.
+\end{enumerate}
+
+\subsection*{B. Regulation (Parking to Origin $(0,0)$ or $(0,0,0)$)}
+\textit{Brockett's Theorem:} No smooth time-invariant state feedback can asymptotically stabilize a driftless nonholonomic system to an equilibrium posture $(0,0,0)$.
+\begin{itemize}
+    \item \textbf{Cartesian Regulation} ($(x,y) \to (0,0)$, final $\theta$ free):
+    With $e_p = [-x, -y]^T$, sagittal unit vector $n = [\cos\theta, \sin\theta]^T$, and pointing error $\gamma = \text{Atan2}(-y, -x) - \theta \in (-\pi, \pi]$:
+    \[
+        v = k_1 (e_p^T n) = -k_1(x\cos\theta + y\sin\theta), \qquad \omega = k_2 \gamma \qquad (k_1, k_2 > 0)
+    \]
+    \item \textbf{Posture Regulation} ($(x,y,\theta) \to (0,0,0)$ via Polar Coordinates, discontinuous at $\rho = 0$):
+    Define $\rho = \sqrt{x^2 + y^2}$, $\gamma = \text{Atan2}(y, x) - \theta + \pi \in (-\pi, \pi]$, $\delta = \gamma + \theta$:
+    \[
+        v = k_1 \rho \cos\gamma, \qquad \omega = k_2 \gamma + k_1 \frac{\sin\gamma\cos\gamma}{\gamma}(\gamma + k_3 \delta) \qquad (k_1, k_2, k_3 > 0)
+    \]
+\end{itemize}
+
+\section*{5. Mobile Manipulators \& Localization (Odometry / EKF)}
+
+\begin{itemize}
+    \item \textbf{Mobile Manipulator Differential Kinematics:} Configuration $q = (q_b, q_m) \in \mathbb{R}^{n_b + n_m}$, inputs $u = (u_b, u_m)^T$:
+    \[
+        \dot{q} = G(q)u = \begin{pmatrix} G_b(q_b) & 0 \\ 0 & I_{n_m} \end{pmatrix} \begin{pmatrix} u_b \\ u_m \end{pmatrix}, \qquad \dot{y}_e = J_b(q)\dot{q}_b + J_m(q)\dot{q}_m = \underbrace{\begin{pmatrix} J_b(q)G_b(q_b) & J_m(q) \end{pmatrix}}_{J_{mm}(q)} u
+    \]
+    \item \textbf{Redundancy Resolution (Projected Gradient):} Since $u_b$ are pseudovelocities, project $\nabla_q H(q)$ via $G^T(q)$:
+    \[
+        u = J_{mm}^\dagger(q)\dot{y}_{e,d} + \Big(I - J_{mm}^\dagger(q)J_{mm}(q)\Big) u_N, \qquad u_N = \pm \alpha \, G^T(q)\nabla_q H(q)
+    \]
+    \item \textbf{Odometric Integration (Unicycle over $T_s$):} With $\Delta s = v_k T_s = \frac{r(\Delta\phi_R + \Delta\phi_L)}{2}$, $\Delta\theta = \omega_k T_s = \frac{r(\Delta\phi_R - \Delta\phi_L)}{d}$:
+    \begin{itemize}
+        \item \textit{Euler:} $x_{k+1} = x_k + \Delta s\cos\theta_k, \quad y_{k+1} = y_k + \Delta s\sin\theta_k, \quad \theta_{k+1} = \theta_k + \Delta\theta$
+        \item \textit{Runge-Kutta (2nd order):} $x_{k+1} = x_k + \Delta s\cos(\theta_k + \frac{\Delta\theta}{2}), \quad y_{k+1} = y_k + \Delta s\sin(\theta_k + \frac{\Delta\theta}{2})$
+        \item \textit{Exact ($\Delta\theta \neq 0$):} $x_{k+1} = x_k + \frac{\Delta s}{\Delta\theta}(\sin\theta_{k+1} - \sin\theta_k), \quad y_{k+1} = y_k - \frac{\Delta s}{\Delta\theta}(\cos\theta_{k+1} - \cos\theta_k)$
+    \end{itemize}
+    \item \textbf{EKF Process \& Range-Bearing Measurement Jacobians:}
+    For landmark $i$ at $(x_{\ell,i}, y_{\ell,i})$, let $\Delta x = x_{\ell,i} - \hat{x}$, $\Delta y = y_{\ell,i} - \hat{y}$, $\rho = \sqrt{\Delta x^2 + \Delta y^2}$:
+    \[
+        F_k = \begin{pmatrix} 1 & 0 & -v_k T_s\sin\hat{\theta}_k \\ 0 & 1 & v_k T_s\cos\hat{\theta}_k \\ 0 & 0 & 1 \end{pmatrix}, \quad h_i(q) = \begin{pmatrix} \sqrt{(x_{\ell,i}-x)^2 + (y_{\ell,i}-y)^2} \\ \text{Atan2}(y_{\ell,i}-y, x_{\ell,i}-x) - \theta \end{pmatrix} \implies H_{k,i} = \begin{pmatrix} -\frac{\Delta x}{\rho} & -\frac{\Delta y}{\rho} & 0 \\ \frac{\Delta y}{\rho^2} & -\frac{\Delta x}{\rho^2} & -1 \end{pmatrix}
+    \]
+\end{itemize}
+
+\newpage
+
+\section*{6. Step-by-Step Algorithms for Classic Class Test Exercises}
+
+\subsection*{Algorithm 1: Kinematic Modeling \& Controllability Analysis (New Nonholonomic Robot)}
+\textbf{Typical Exam Prompt:} \textit{Given a wheeled/hopping robot with schematic drawing, find generalized coordinates, Pfaffian constraints, a physically meaningful kinematic model, and prove controllability.}
+\begin{enumerate}
+    \item \textbf{Define Configuration $q \in \mathbb{R}^n$:} Select a minimal set of coordinates (e.g., chassis pose $(x,y,\theta)$, steering angles $\phi$, trailer angles $\theta_t$). Mark them clearly.
+    \item \textbf{Write Pfaffian Constraints $A^T(q)\dot{q} = 0$:}
+    \begin{itemize}
+        \item For each non-steered/steered wheel $j$ with contact point $(x_j(q), y_j(q))$ and absolute orientation $\psi_j(q)$, enforce zero lateral velocity (pure rolling without sideways slip):
+        \[
+            \dot{x}_j \sin\psi_j - \dot{y}_j \cos\psi_j = 0
+        \]
+        \item Express $(x_j, y_j)$ in terms of $q$ using rigid-body kinematics (e.g., $x_f = x + \ell\cos\theta$, $y_f = y + \ell\sin\theta$) and differentiate w.r.t. time to assemble the $k$ rows of $A^T(q)$.
+    \end{itemize}
+    \item \textbf{Derive Kinematic Model $\dot{q} = G(q)u$:}
+    \begin{itemize}
+        \item Find $m = n - k$ linearly independent vector fields $g_1(q), \dots, g_m(q)$ such that $A^T(q)g_i(q) = 0$.
+        \item \textit{Exam Tip:} Normalize/scale the columns of $G(q)$ so that the inputs $u_1, \dots, u_m$ correspond directly to actuated velocities (e.g., driving speed $v$ and steering rate $\omega$).
+    \end{itemize}
+    \item \textbf{Check Controllability via Chow's Theorem:}
+    \begin{itemize}
+        \item Compute first-order Lie brackets $[g_i, g_j] = \frac{\partial g_j}{\partial q}g_i - \frac{\partial g_i}{\partial q}g_j$.
+        \item If $\text{rank}(g_1, \dots, g_m, [g_i, g_j]) < n$, compute second-order brackets $[g_i, [g_j, g_k]]$ until $n$ independent vectors are found.
+        \item Form a square $n \times n$ matrix $M(q)$ with $n$ selected vector fields and compute $\det M(q)$. State explicitly where $\det M(q) \neq 0$ (controllable) and identify any singular configurations ($\det M(q) = 0$, e.g., $\phi = \pm \pi/2$).
+    \end{itemize}
+\end{enumerate}
+
+\subsection*{Algorithm 2: Flatness-Based Path Planning (Cartesian Cubic Polynomials)}
+\textbf{Typical Exam Prompt:} \textit{Plan an admissible path for a unicycle (or RWD bicycle) from $q_i = (x_i, y_i, \theta_i)$ to $q_f = (x_f, y_f, \theta_f)$ using differential flatness.}
+\begin{enumerate}
+    \item \textbf{Set Boundary Conditions for Flat Outputs $(x(s), y(s))$ on $s \in [0, 1]$:}
+    \begin{itemize}
+        \item Position: $x(0) = x_i, \; y(0) = y_i, \quad x(1) = x_f, \; y(1) = y_f$.
+        \item Tangent alignment (choosing forward motion $k_i, k_f > 0$, typically $k_i = k_f = k$):
+        \[
+            x'(0) = k_i\cos\theta_i, \quad y'(0) = k_i\sin\theta_i, \qquad x'(1) = k_f\cos\theta_f, \quad y'(1) = k_f\sin\theta_f
+        \]
+    \end{itemize}
+    \item \textbf{Compute Cubic Hermite Polynomials:}
+    \[
+        x(s) = s^3 x_f - (s-1)^3 x_i + \alpha_x s^2(s-1) + \beta_x s(s-1)^2, \qquad y(s) = s^3 y_f - (s-1)^3 y_i + \alpha_y s^2(s-1) + \beta_y s(s-1)^2
+    \]
+    Evaluate derivatives at $s=0$ and $s=1$ to find the coefficients directly:
+    \[
+        \beta_x = k_i\cos\theta_i - 3x_i, \quad \alpha_x = k_f\cos\theta_f - 3x_f, \qquad \beta_y = k_i\sin\theta_i - 3y_i, \quad \alpha_y = k_f\sin\theta_f - 3y_f
+    \]
+    \textit{(Equivalently, in standard basis $x(s) = a_3 s^3 + a_2 s^2 + a_1 s + a_0$: $a_0 = x_i$, $a_1 = x'(0)$, $a_2 = 3(x_f - x_i) - 2x'(0) - x'(1)$, $a_3 = 2(x_i - x_f) + x'(0) + x'(1)$.)}
+    \item \textbf{Reconstruct State \& Geometric Inputs:} Plug $x'(s), y'(s), x''(s), y''(s)$ into the flatness reconstruction formulas ($\theta(s), \tilde{v}(s), \tilde{\omega}(s)$). Verify that $x'(s)^2 + y'(s)^2 \neq 0$ for all $s \in [0, 1]$ (no cusps/stops).
+\end{enumerate}
+
+\subsection*{Algorithm 3: Two-Phase Planning for $(2,3)$ Chained Form}
+\textbf{Typical Exam Prompt:} \textit{Design a two-phase algorithm to steer a $(2,3)$ chained form (or unicycle) from $z_i = (z_{1,i}, z_{2,i}, z_{3,i})$ to $z_f = (z_{1,f}, z_{2,f}, z_{3,f})$.}
+\begin{enumerate}
+    \item \textbf{Phase 1 ($t \in [0, T_1]$) — Steer $(z_1, z_2)$ to Target:}
+    \begin{itemize}
+        \item Choose any $T_1 > 0$ and apply constant inputs:
+        \[
+            w_1(t) = \frac{z_{1,f} - z_{1,i}}{T_1}, \qquad w_2(t) = \frac{z_{2,f} - z_{2,i}}{T_1}
+        \]
+        \item Integrate $\dot{z}_3 = z_2(t) w_1$ to find the intermediate value at $t = T_1$:
+        \[
+            z_3(T_1) = z_{3,i} + \int_0^{T_1} \left(z_{2,i} + w_2 t\right) w_1 \, dt = z_{3,i} + \frac{z_{2,i} + z_{2,f}}{2}(z_{1,f} - z_{1,i})
+        \]
+    \end{itemize}
+    \item \textbf{Phase 2 ($t \in [T_1, T_1 + T_2]$, $T_2 = 2\pi/\omega$) — Closed Loop to Fix $z_3$:}
+    \begin{itemize}
+        \item Compute the remaining error $\Delta z_3 = z_{3,f} - z_3(T_1)$. If $\Delta z_3 = 0$, set $T_2 = 0$ and stop.
+        \item Apply sinusoidal inputs for $\tau = t - T_1 \in [0, 2\pi/\omega]$:
+        \[
+            w_1(t) = a\sin(\omega\tau), \qquad w_2(t) = b\cos(\omega\tau)
+        \]
+        \item Select parameters $(a, b, \omega)$ (e.g., fix $\omega = 2\pi/T_2$ and $|a| = |b|$) to satisfy the area condition:
+        \[
+            \frac{ab\pi}{\omega^2} = \Delta z_3 \implies \text{e.g., } a = \omega\sqrt{\frac{|\Delta z_3|}{\pi}}\,\text{sgn}(\Delta z_3), \quad b = \omega\sqrt{\frac{|\Delta z_3|}{\pi}}
+        \]
+        At $t = T_1 + T_2$, $z_1$ and $z_2$ return to $(z_{1,f}, z_{2,f})$ while $z_3$ reaches $z_{3,f}$.
+    \end{itemize}
+\end{enumerate}
+
+\subsection*{Algorithm 4: Dynamic Feedback Linearization Design (Unicycle / FWD Bicycle)}
+\textbf{Typical Exam Prompt:} \textit{Prove that output $y = (x,y)$ (or front wheel $(x_f, y_f)$) is not flat / has singular decoupling matrix, and design a dynamic feedback linearizing controller.}
+\begin{enumerate}
+    \item \textbf{Differentiate Output $y$ Until Inputs Appear:}
+    \begin{itemize}
+        \item For unicycle $y = (x,y)^T$: $\dot{y} = [\cos\theta, \sin\theta]^T v$. Only $v$ appears; the decoupling matrix $E(q) = \begin{pmatrix} \cos\theta & 0 \\ \sin\theta & 0 \end{pmatrix}$ has $\text{rank} = 1 < 2$ (singular).
+    \end{itemize}
+    \item \textbf{Apply Dynamic Extension:}
+    \begin{itemize}
+        \item Add an integrator before the input that already appeared: set $\dot{v} = a$ (new state $\xi = v$, new input vector $\tilde{u} = [a, \omega]^T$).
+    \end{itemize}
+    \item \textbf{Differentiate Again to Obtain Full-Rank Decoupling Matrix:}
+    \begin{itemize}
+        \item Compute $\ddot{y} = \begin{pmatrix} \cos\theta & -v\sin\theta \\ \sin\theta & v\cos\theta \end{pmatrix} \begin{pmatrix} a \\ \omega \end{pmatrix} = \tilde{E}(q, v)\tilde{u}$.
+        \item Check $\det \tilde{E}(q, v) = v \neq 0$ (invertible whenever $v \neq 0$).
+    \end{itemize}
+    \item \textbf{Close the Outer Linear Loop:}
+    \begin{itemize}
+        \item Set $\tilde{u} = \tilde{E}^{-1}(q, v)w$ with auxiliary PD+feedforward input $w = \ddot{y}_d + K_d(\dot{y}_d - \dot{y}) + K_p(y_d - y)$ ($K_p, K_d > 0$ diagonal).
+        \item Specify the complete dynamic compensator state equation: $\dot{\xi} = a$, output $v = \xi$, plus $\omega$.
+    \end{itemize}
+\end{enumerate}
+
+\subsection*{Algorithm 5: EKF Localization Step (Numerical / Symbolic Computation)}
+\textbf{Typical Exam Prompt:} \textit{Given initial estimate $\hat{q}_{0|0}$, covariance $P_{0|0}$, encoder readings/velocities, and landmark range-bearing measurements, perform one EKF prediction-correction cycle.}
+\begin{enumerate}
+    \item \textbf{Reconstruct Inputs (if encoder increments $\Delta\phi_R, \Delta\phi_L$ are given):}
+    \[
+        \Delta s = \frac{r(\Delta\phi_R + \Delta\phi_L)}{2}, \qquad \Delta\theta = \frac{r(\Delta\phi_R - \Delta\phi_L)}{d}
+    \]
+    \item \textbf{Prediction Step:}
+    \begin{itemize}
+        \item Propagate state using the specified odometric scheme (usually Euler):
+        \[
+            \hat{q}_{k+1|k} = \begin{pmatrix} \hat{x}_{k|k} + \Delta s\cos\hat{\theta}_{k|k} \\ \hat{y}_{k|k} + \Delta s\sin\hat{\theta}_{k|k} \\ \hat{\theta}_{k|k} + \Delta\theta \end{pmatrix}
+        \]
+        \item Evaluate process Jacobian $F_k = \frac{\partial f}{\partial q}\big|_{\hat{q}_{k|k}}$ and propagate covariance: $P_{k+1|k} = F_k P_{k|k} F_k^T + Q_k$.
+    \end{itemize}
+    \item \textbf{Innovation \& Measurement Jacobian (for $L_k$ visible landmarks):}
+    \begin{itemize}
+        \item For each observed landmark $i$ at $(x_{\ell,i}, y_{\ell,i})$, compute $\Delta x = x_{\ell,i} - \hat{x}_{k+1|k}$, $\Delta y = y_{\ell,i} - \hat{y}_{k+1|k}$, $\hat{\rho}_i = \sqrt{\Delta x^2 + \Delta y^2}$, and predicted measurement:
+        \[
+            \hat{y}_{k+1,i} = \begin{pmatrix} \hat{\rho}_i \\ \text{Atan2}(\Delta y, \Delta x) - \hat{\theta}_{k+1|k} \end{pmatrix}
+        \]
+        \item Compute innovation $\nu_{k+1} = y_{k+1} - \hat{y}_{k+1}$ (\textbf{Critical:} wrap angular innovation components into $(-\pi, \pi]$!).
+        \item Stack the $2 \times 3$ matrices $H_{k+1,i}$ vertically to form $H_{k+1} \in \mathbb{R}^{2L_k \times 3}$, and build block-diagonal $R_{k+1} = \text{diag}(R_{k+1,1}, \dots, R_{k+1,L_k})$.
+    \end{itemize}
+    \item \textbf{Correction Step:}
+    \[
+        S_{k+1} = H_{k+1} P_{k+1|k} H_{k+1}^T + R_{k+1}, \qquad K_{k+1} = P_{k+1|k} H_{k+1}^T S_{k+1}^{-1}
+    \]
+    \[
+        \hat{q}_{k+1|k+1} = \hat{q}_{k+1|k} + K_{k+1}\nu_{k+1}, \qquad P_{k+1|k+1} = (I - K_{k+1}H_{k+1})P_{k+1|k}
+    \]
+    \textit{(If $L_k = 0$, skip correction: $\hat{q}_{k+1|k+1} = \hat{q}_{k+1|k}$ and $P_{k+1|k+1} = P_{k+1|k}$.)}
+\end{enumerate}
+
+\end{document}
