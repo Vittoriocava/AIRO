@@ -174,7 +174,7 @@ A configuration-space path $\tau:[0,1]\to\Cspace$ is \emph{safe} (or \emph{free}
 $\CO_i$ is the set of ``forbidden placements'' of the robot: all the configurations in which the robot would overlap $\Obs_i$. Shrinking the robot to a point costs something: every obstacle has to be \emph{inflated} by exactly the amount that makes the point-robot collide when the real robot would. After this change of viewpoint, ``avoid collisions'' becomes ``stay outside the shaded regions''.
 \end{intuition}
 
-\begin{figure}[t]
+\begin{figure}[H]
 \centering
 \begin{tikzpicture}[>=Stealth]
 \tikzset{obs/.style={fill=black!55,draw=black!80}}
@@ -273,7 +273,7 @@ Let the obstacle be the rectangle $[1,3]\times[1,2.5]$ and let the robot be the 
 It is a polygon (no arcs), and it is grown \emph{anisotropically}: by $1$ on the left, by $0.8$ at the bottom, and not at all to the right or at the top. Two placements of the robot touching the obstacle are marked in Fig.~\ref{fig:poly}.
 \end{example}
 
-\begin{figure}[t]
+\begin{figure}[H]
 \centering
 \begin{tikzpicture}[>=Stealth]
 \tikzset{obs/.style={fill=black!55,draw=black!80}}
@@ -390,516 +390,490 @@ Planning then reduces to (a) connecting $\qs$ and $\qg$ to the roadmap and (b) s
 A roadmap is the ``subway map'' of $\Cfree$: you do not need to know every street, only how to reach a station from where you are and how stations are linked. Once the map exists, a query is a short trip: walk to a station, ride the network, walk from the last station to the goal.
 \end{intuition}
 
-% % =====================================================================
-% \sect{Roadmap Method: Retraction}{15--21}
-% \label{sec:retraction}
-% % =====================================================================
+% =====================================================================
+\sect{Roadmap Method: Retraction}{15--21}
+\label{sec:retraction}
+% =====================================================================
 
-% \subsect{Assumptions and basic definitions}{15}
+\subsect{Assumptions and basic definitions}{15}
 
-% \begin{definition}[Polygonal limited subset]
-% In addition to the assumptions of the canonical problem, the retraction method assumes $\Cspace=\R^2$ and that $\Cfree$ is a \emph{polygonal limited subset}: a bounded set whose boundary $\partial\Cfree=\partial\CO$ is entirely made of line segments (it may contain polygonal holes).
-% \end{definition}
+\begin{definition}[Polygonal limited subset]
+In addition to the assumptions of the canonical problem, the retraction method assumes $\Cspace=\R^2$ and that $\Cfree$ is a \emph{polygonal limited subset}: a bounded set whose boundary $\partial\Cfree=\partial\CO$ is entirely made of line segments (it may contain polygonal holes).
+\end{definition}
 
-% If the obstacles are not polygonal they can be approximated by polygons (for instance, a circular obstacle by a polygon that contains it, which is a conservative approximation).
+If the obstacles are not polygonal they can be approximated by polygons (for instance, a circular obstacle by a polygon that contains it, which is a conservative approximation).
 
-% \begin{definition}[Clearance]
-% The \emph{clearance} of a configuration $\vq\in\Cfree$ is the minimum distance between $\vq$ and the boundary of $\Cfree$:
-% \[
-%   \gamma(\vq)=\min_{\vq'\in\partial\CO}\|\vq-\vq'\|,
-% \]
-% where $\|\cdot\|$ denotes an appropriate distance in $\Cspace$.
-% \end{definition}
+\begin{definition}[Clearance]
+The \emph{clearance} of a configuration $\vq\in\Cfree$ is the minimum distance between $\vq$ and the boundary of $\Cfree$:
+\[
+  \gamma(\vq)=\min_{\vq'\in\partial\CO}\|\vq-\vq'\|,
+\]
+where $\|\cdot\|$ denotes an appropriate distance in $\Cspace$.
+\end{definition}
 
-% \begin{definition}[Neighbors]
-% The \emph{neighbors} of $\vq\in\Cfree$ are the boundary points that realize its clearance:
-% \[
-%   N(\vq)=\{\vq'\in\partial\CO:\ \|\vq-\vq'\|=\gamma(\vq)\}.
-% \]
-% \end{definition}
+\begin{definition}[Neighbors]
+The \emph{neighbors} of $\vq\in\Cfree$ are the boundary points that realize its clearance:
+\[
+  N(\vq)=\{\vq'\in\partial\CO:\ \|\vq-\vq'\|=\gamma(\vq)\}.
+\]
+\end{definition}
 
-% \begin{definition}[Generalized Voronoi diagram]
-% The \emph{generalized Voronoi diagram} (GVD) of $\Cfree$ is the set of configurations with more than one neighbor:
-% \[
-%   \Vor(\Cfree)=\{\vq\in\Cfree:\ \card(N(\vq))>1\}.
-% \]
-% \end{definition}
+\begin{definition}[Generalized Voronoi diagram]
+The \emph{generalized Voronoi diagram} (GVD) of $\Cfree$ is the set of configurations with more than one neighbor:
+\[
+  \Vor(\Cfree)=\{\vq\in\Cfree:\ \card(N(\vq))>1\}.
+\]
+\end{definition}
 
-% It is called \emph{generalized} because ordinary Voronoi diagrams have \emph{single points} as generators (and each generator owns the region of the plane closer to it than to any other), whereas here the ``generators'' are the polygons (the pieces of $\partial\CO$).
+It is called \emph{generalized} because ordinary Voronoi diagrams have \emph{single points} as generators (and each generator owns the region of the plane closer to it than to any other), whereas here the ``generators'' are the polygons (the pieces of $\partial\CO$).
 
-% \begin{intuition}
-% Imagine $\gamma$ as the altitude of a landscape: it is zero on the obstacle boundaries and grows as you move away from them. The GVD is the system of \emph{ridges} of this landscape, the places where two (or more) different obstacle features are exactly equally close. Walking along a ridge means ``walking in the middle of the corridor'', i.e.\ as far from the obstacles as you can be.
-% \end{intuition}
+\begin{intuition}
+Imagine $\gamma$ as the altitude of a landscape: it is zero on the obstacle boundaries and grows as you move away from them. The GVD is the system of \emph{ridges} of this landscape, the places where two (or more) different obstacle features are exactly equally close. Walking along a ridge means ``walking in the middle of the corridor'', i.e.\ as far from the obstacles as you can be.
+\end{intuition}
 
-% \subsect{The Voronoi diagram as a roadmap}{16--17}
+\subsect{The Voronoi diagram as a roadmap}{16--17}
 
-% \begin{proposition}[Elementary arcs of the GVD]
-% \label{prop:arcs}
-% The arcs of $\Vor(\Cfree)$ are of three kinds, according to the pair of boundary features that generate them:
-% \begin{itemize}
-%   \item \textbf{edge--edge}: a \emph{rectilinear} segment (a piece of the bisector of the two edges);
-%   \item \textbf{vertex--vertex}: a \emph{rectilinear} segment (a piece of the perpendicular bisector of the two vertices);
-%   \item \textbf{edge--vertex}: a \emph{parabolic} arc (with the vertex as focus and the line of the edge as directrix).
-% \end{itemize}
-% \end{proposition}
-% \begin{proof}
-% The points equidistant from two lines lie on their angle bisector; from two points, on the perpendicular bisector of the segment joining them; from a point and a line, on a parabola whose focus is the point and whose directrix is the line. In the last case, e.g.\ for the line $y=0$ and the point $(0,2)$: $y^2=x^2+(y-2)^2\iff y=1+x^2/4$.
-% \end{proof}
+\begin{proposition}[Elementary arcs of the GVD]
+\label{prop:arcs}
+The arcs of $\Vor(\Cfree)$ are of three kinds, according to the pair of boundary features that generate them:
+\begin{itemize}
+  \item \textbf{edge--edge}: a \emph{rectilinear} segment (a piece of the bisector of the two edges);
+  \item \textbf{vertex--vertex}: a \emph{rectilinear} segment (a piece of the perpendicular bisector of the two vertices);
+  \item \textbf{edge--vertex}: a \emph{parabolic} arc (with the vertex as focus and the line of the edge as directrix).
+\end{itemize}
+\end{proposition}
+\begin{proof}
+The points equidistant from two lines lie on their angle bisector; from two points, on the perpendicular bisector of the segment joining them; from a point and a line, on a parabola whose focus is the point and whose directrix is the line. In the last case, e.g.\ for the line $y=0$ and the point $(0,2)$: $y^2=x^2+(y-2)^2\iff y=1+x^2/4$.
+\end{proof}
 
-% \begin{figure}[t]
-% \centering
-% \begin{tikzpicture}[>=Stealth]
-% \tikzset{wall/.style={pattern=north east lines,pattern color=black!60,draw=black}}
-% % (a) edge-edge
-% \begin{scope}
-%   \fill[wall] (0,0) -- (3.2,1.6) -- (3.2,2.4) -- (0,2.4) -- cycle;
-%   \fill[wall] (0,0) -- (3.2,-1.6) -- (3.2,-2.4) -- (0,-2.4) -- cycle;
-%   \draw[red!70!black,very thick] (0,0) -- (3.2,0);
-%   \node[font=\footnotesize,align=center] at (1.6,-2.9) {(a) edge--edge\\rectilinear};
-% \end{scope}
-% % (b) edge-vertex
-% \begin{scope}[xshift=5.6cm]
-%   \fill[wall] (-2,0) rectangle (2,-0.6);
-%   \draw[thick] (-2,0) -- (2,0);
-%   \fill[wall] (-0.6,3.0) -- (0.6,3.0) -- (0,2.0) -- cycle;
-%   \draw[red!70!black,very thick,domain=-2:2,samples=30,variable=\t] plot ({\t},{1+\t*\t/4});
-%   \node[font=\footnotesize,align=center] at (0,-1.5) {(b) edge--vertex\\parabolic};
-% \end{scope}
-% % (c) vertex-vertex
-% \begin{scope}[xshift=11.3cm]
-%   \fill[wall] (-2.5,-0.6) -- (-2.5,0.6) -- (-1,0) -- cycle;
-%   \fill[wall] (2.5,-0.6) -- (2.5,0.6) -- (1,0) -- cycle;
-%   \draw[red!70!black,very thick] (0,-1.6) -- (0,1.6);
-%   \node[font=\footnotesize,align=center] at (0,-2.5) {(c) vertex--vertex\\rectilinear};
-% \end{scope}
-% \end{tikzpicture}
-% \caption{The three elementary tracts of the GVD (red): points equidistant from two edges, from an edge and a vertex, and from two vertices.}
-% \label{fig:tracts}
-% \end{figure}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[>=Stealth]
+\tikzset{wall/.style={pattern=north east lines,pattern color=black!60,draw=black}}
+% (a) edge-edge
+\begin{scope}
+  \fill[wall] (0,0) -- (3.2,1.6) -- (3.2,2.4) -- (0,2.4) -- cycle;
+  \fill[wall] (0,0) -- (3.2,-1.6) -- (3.2,-2.4) -- (0,-2.4) -- cycle;
+  \draw[red!70!black,very thick] (0,0) -- (3.2,0);
+  \node[font=\footnotesize,align=center] at (1.6,-2.9) {(a) edge--edge\\rectilinear};
+\end{scope}
+% (b) edge-vertex
+\begin{scope}[xshift=5.6cm]
+  \fill[wall] (-2,0) rectangle (2,-0.6);
+  \draw[thick] (-2,0) -- (2,0);
+  \fill[wall] (-0.6,3.0) -- (0.6,3.0) -- (0,2.0) -- cycle;
+  \draw[red!70!black,very thick,domain=-2:2,samples=30,variable=\t] plot ({\t},{1+\t*\t/4});
+  \node[font=\footnotesize,align=center] at (0,-1.5) {(b) edge--vertex\\parabolic};
+\end{scope}
+% (c) vertex-vertex
+\begin{scope}[xshift=11.3cm]
+  \fill[wall] (-2.5,-0.6) -- (-2.5,0.6) -- (-1,0) -- cycle;
+  \fill[wall] (2.5,-0.6) -- (2.5,0.6) -- (1,0) -- cycle;
+  \draw[red!70!black,very thick] (0,-1.6) -- (0,1.6);
+  \node[font=\footnotesize,align=center] at (0,-2.5) {(c) vertex--vertex\\rectilinear};
+\end{scope}
+\end{tikzpicture}
+\caption{The three elementary tracts of the GVD (red): points equidistant from two edges, from an edge and a vertex, and from two vertices.}
+\label{fig:tracts}
+\end{figure}
 
-% \begin{intuition}
-% The three cases are the three ways ``two nearest things'' can look. Between two straight walls the middle is a straight line. Between a straight wall and a pointed corner the middle bends: near the corner the path has to bulge away from it, which is exactly what a parabola does. Between two corners it is the perpendicular bisector.
-% \end{intuition}
+\begin{intuition}
+The three cases are the three ways ``two nearest things'' can look. Between two straight walls the middle is a straight line. Between a straight wall and a pointed corner the middle bends: near the corner the path has to bulge away from it, which is exactly what a parabola does. Between two corners it is the perpendicular bisector.
+\end{intuition}
 
-% \begin{remark}[GVD as a roadmap]
-% $\Vor(\Cfree)$ can be seen as a graph whose \emph{arcs} are the elementary arcs of Prop.~\ref{prop:arcs} and whose \emph{nodes} are their end points. It captures the connectivity of $\Cfree$ and it \emph{maximizes safety}, since along its arcs the robot is as far as possible from the two nearest obstacle features: it is a natural roadmap of $\Cfree$.
-% \end{remark}
+\begin{remark}[GVD as a roadmap]
+$\Vor(\Cfree)$ can be seen as a graph whose \emph{arcs} are the elementary arcs of Prop.~\ref{prop:arcs} and whose \emph{nodes} are their end points. It captures the connectivity of $\Cfree$ and it \emph{maximizes safety}, since along its arcs the robot is as far as possible from the two nearest obstacle features: it is a natural roadmap of $\Cfree$.
+\end{remark}
 
-% \begin{figure}[t]
-% \centering
-% \begin{tikzpicture}[scale=0.85,>=Stealth]
-% \def\gvdquad{%
-%   \draw[red!70!black,thick] (0,0) -- (1.536,1.536);
-%   \draw[red!70!black,thick,domain=1.536:2,samples=12,variable=\t] plot ({1.5+(\t-2)^2/6},{\t});
-%   \draw[red!70!black,thick] (1.5,2) -- (1.5,3);
-%   \draw[red!70!black,thick,domain=1.536:3,samples=20,variable=\t] plot ({\t},{1+(\t-3)^2/4});
-%   \draw[red!70!black,thick] (3,1) -- (4,1);}
-% \draw[very thick] (0,0) rectangle (8,6);
-% \fill[black!55] (3,2) rectangle (5,4);
-% \node[white] at (4,3) {$\CO_1$};
-% \begin{scope}\gvdquad\end{scope}
-% \begin{scope}[cm={-1,0,0,1,(8,0)}]\gvdquad\end{scope}
-% \begin{scope}[cm={1,0,0,-1,(0,6)}]\gvdquad\end{scope}
-% \begin{scope}[cm={-1,0,0,-1,(8,6)}]\gvdquad\end{scope}
-% \node[red!70!black,font=\footnotesize] at (4,1.35) {$\Vor(\Cfree)$};
-% % start/goal and retractions
-% \fill (0.6,3.3) circle (2pt) node[above,font=\footnotesize] {$\qs$};
-% \fill (7.4,2.6) circle (2pt) node[below,font=\footnotesize] {$\qg$};
-% \draw[blue!70!black,thick,->] (0.6,3.3) -- (1.5,3.3);
-% \draw[blue!70!black,thick,->] (7.4,2.6) -- (6.5,2.6);
-% \fill[blue!70!black] (1.5,3.3) circle (2pt) node[right,font=\footnotesize] {$r(\qs)$};
-% \fill[blue!70!black] (6.5,2.6) circle (2pt) node[left,font=\footnotesize] {$r(\qg)$};
-% % path on V from r(qs) to r(qg) through the lower side
-% \draw[blue!70!black,very thick] (1.5,3.3) -- (1.5,2);
-% \draw[blue!70!black,very thick,domain=2:1.536,samples=12,variable=\t] plot ({1.5+(\t-2)^2/6},{\t});
-% \draw[blue!70!black,very thick,domain=1.536:3,samples=20,variable=\t] plot ({\t},{1+(\t-3)^2/4});
-% \draw[blue!70!black,very thick] (3,1) -- (5,1);
-% \draw[blue!70!black,very thick,domain=5:6.464,samples=20,variable=\t] plot ({\t},{1+(\t-5)^2/4});
-% \draw[blue!70!black,very thick,domain=1.536:2,samples=12,variable=\t] plot ({8-1.5-(\t-2)^2/6},{\t});
-% \draw[blue!70!black,very thick] (6.5,2) -- (6.5,2.6);
-% \end{tikzpicture}
-% \caption{GVD (red) of a rectangular room with a central obstacle: four diagonal branches reach the room corners, and a closed loop surrounds the obstacle, made of straight tracts (edge--edge) and parabolic tracts (edge--vertex around the obstacle corners). The solution path (blue) is $\qs\to r(\qs)$, an arc sequence on $\Vor$, and $r(\qg)\to\qg$.}
-% \label{fig:gvd}
-% \end{figure}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[scale=0.85,>=Stealth]
+\def\gvdquad{%
+  \draw[red!70!black,thick] (0,0) -- (1.536,1.536);
+  \draw[red!70!black,thick,domain=1.536:2,samples=12,variable=\t] plot ({1.5+(\t-2)^2/6},{\t});
+  \draw[red!70!black,thick] (1.5,2) -- (1.5,3);
+  \draw[red!70!black,thick,domain=1.536:3,samples=20,variable=\t] plot ({\t},{1+(\t-3)^2/4});
+  \draw[red!70!black,thick] (3,1) -- (4,1);}
+\draw[very thick] (0,0) rectangle (8,6);
+\fill[black!55] (3,2) rectangle (5,4);
+\node[white] at (4,3) {$\CO_1$};
+\begin{scope}\gvdquad\end{scope}
+\begin{scope}[cm={-1,0,0,1,(8,0)}]\gvdquad\end{scope}
+\begin{scope}[cm={1,0,0,-1,(0,6)}]\gvdquad\end{scope}
+\begin{scope}[cm={-1,0,0,-1,(8,6)}]\gvdquad\end{scope}
+\node[red!70!black,font=\footnotesize] at (4,1.35) {$\Vor(\Cfree)$};
+% start/goal and retractions
+\fill (0.6,3.3) circle (2pt) node[above,font=\footnotesize] {$\qs$};
+\fill (7.4,2.6) circle (2pt) node[below,font=\footnotesize] {$\qg$};
+\draw[blue!70!black,thick,->] (0.6,3.3) -- (1.5,3.3);
+\draw[blue!70!black,thick,->] (7.4,2.6) -- (6.5,2.6);
+\fill[blue!70!black] (1.5,3.3) circle (2pt) node[right,font=\footnotesize] {$r(\qs)$};
+\fill[blue!70!black] (6.5,2.6) circle (2pt) node[left,font=\footnotesize] {$r(\qg)$};
+% path on V from r(qs) to r(qg) through the lower side
+\draw[blue!70!black,very thick] (1.5,3.3) -- (1.5,2);
+\draw[blue!70!black,very thick,domain=2:1.536,samples=12,variable=\t] plot ({1.5+(\t-2)^2/6},{\t});
+\draw[blue!70!black,very thick,domain=1.536:3,samples=20,variable=\t] plot ({\t},{1+(\t-3)^2/4});
+\draw[blue!70!black,very thick] (3,1) -- (5,1);
+\draw[blue!70!black,very thick,domain=5:6.464,samples=20,variable=\t] plot ({\t},{1+(\t-5)^2/4});
+\draw[blue!70!black,very thick,domain=1.536:2,samples=12,variable=\t] plot ({8-1.5-(\t-2)^2/6},{\t});
+\draw[blue!70!black,very thick] (6.5,2) -- (6.5,2.6);
+\end{tikzpicture}
+\caption{GVD (red) of a rectangular room with a central obstacle: four diagonal branches reach the room corners, and a closed loop surrounds the obstacle, made of straight tracts (edge--edge) and parabolic tracts (edge--vertex around the obstacle corners). The solution path (blue) is $\qs\to r(\qs)$, an arc sequence on $\Vor$, and $r(\qg)\to\qg$.}
+\label{fig:gvd}
+\end{figure}
 
-% \subsect{Retraction}{18}
+\subsect{Retraction}{18}
 
-% Usually $\qs$ and $\qg$ do not lie on $\Vor(\Cfree)$, so they must first be connected to the diagram.
+Usually $\qs$ and $\qg$ do not lie on $\Vor(\Cfree)$, so they must first be connected to the diagram.
 
-% \begin{definition}[Retraction]
-% For $\vq\in\Cfree\setminus\Vor(\Cfree)$ the neighbor $s$ is unique and $\nabla\gamma(\vq)=(\vq-s)/\|\vq-s\|$ is the direction of \emph{clearance growth}. The \emph{retraction} $r(\vq)$ is the first intersection with $\Vor(\Cfree)$ of the ray $r^\circ(\vq)$ that starts at $\vq$ and follows $\nabla\gamma$ (the line through $N(\vq)$ and $\vq$, moving away from $N(\vq)$). For $\vq\in\Vor(\Cfree)$, $r(\vq)=\vq$.
-% \end{definition}
+\begin{definition}[Retraction]
+For $\vq\in\Cfree\setminus\Vor(\Cfree)$ the neighbor $s$ is unique and $\nabla\gamma(\vq)=(\vq-s)/\|\vq-s\|$ is the direction of \emph{clearance growth}. The \emph{retraction} $r(\vq)$ is the first intersection with $\Vor(\Cfree)$ of the ray $r^\circ(\vq)$ that starts at $\vq$ and follows $\nabla\gamma$ (the line through $N(\vq)$ and $\vq$, moving away from $N(\vq)$). For $\vq\in\Vor(\Cfree)$, $r(\vq)=\vq$.
+\end{definition}
 
-% \begin{proposition}[Retraction preserves connectivity]
-% \label{prop:retr}
-% For every $\vq\in\Cfree$, the segment from $\vq$ to $r(\vq)$ is a safe path; in particular $\vq$ and $r(\vq)$ lie in the same connected component of $\Cfree$.
-% \end{proposition}
-% \begin{proof}
-% Let $u=\nabla\gamma(\vq)$ and $s$ the unique neighbor. As long as $s$ remains the \emph{unique} nearest boundary point, the clearance along the ray is $\gamma(\vq+\lambda u)=\gamma(\vq)+\lambda>0$. By definition of $\Vor(\Cfree)$, a second nearest boundary point appears exactly when the ray first meets $\Vor(\Cfree)$, that is, at $r(\vq)$. Hence the clearance stays strictly positive on the whole segment, so the segment never touches $\partial\CO$ and remains in $\Cfree$.
-% \end{proof}
+\begin{proposition}[Retraction preserves connectivity]
+\label{prop:retr}
+For every $\vq\in\Cfree$, the segment from $\vq$ to $r(\vq)$ is a safe path; in particular $\vq$ and $r(\vq)$ lie in the same connected component of $\Cfree$.
+\end{proposition}
+\begin{proof}
+Let $u=\nabla\gamma(\vq)$ and $s$ the unique neighbor. As long as $s$ remains the \emph{unique} nearest boundary point, the clearance along the ray is $\gamma(\vq+\lambda u)=\gamma(\vq)+\lambda>0$. By definition of $\Vor(\Cfree)$, a second nearest boundary point appears exactly when the ray first meets $\Vor(\Cfree)$, that is, at $r(\vq)$. Hence the clearance stays strictly positive on the whole segment, so the segment never touches $\partial\CO$ and remains in $\Cfree$.
+\end{proof}
 
-% \begin{intuition}
-% Retraction means ``walk straight away from the nearest wall until you are equally far from two walls''. Because every step increases the distance from every obstacle point that mattered, you can never run into one. Following the clearance is what makes it safe: jumping instead to the \emph{closest} point of the diagram could cross a thin obstacle and land you in a different connected component, with lower distance but no preserved connectivity.
-% \end{intuition}
+\begin{intuition}
+Retraction means ``walk straight away from the nearest wall until you are equally far from two walls''. Because every step increases the distance from every obstacle point that mattered, you can never run into one. Following the clearance is what makes it safe: jumping instead to the \emph{closest} point of the diagram could cross a thin obstacle and land you in a different connected component, with lower distance but no preserved connectivity.
+\end{intuition}
 
-% \begin{figure}[t]
-% \centering
-% \begin{tikzpicture}[>=Stealth]
-% \tikzset{wall/.style={pattern=north east lines,pattern color=black!60,draw=black}}
-% \fill[wall] (-1.8,-1.5) -- (-1.2,2.5) -- (-2.6,2.5) -- (-2.6,-1.5) -- cycle;
-% \fill[wall] (1.8,-1.5) -- (1.2,2.5) -- (2.6,2.5) -- (2.6,-1.5) -- cycle;
-% \draw[thick] (-1.8,-1.5) -- (-1.2,2.5);
-% \draw[thick] (1.8,-1.5) -- (1.2,2.5);
-% \draw[red!70!black,very thick,dashed] (0,-1.5) -- (0,2.5);
-% \node[red!70!black,above] at (0,2.5) {$\Vor$};
-% \coordinate (q) at (-0.6,0.8);
-% \coordinate (N) at (-1.436,0.925);
-% \coordinate (r) at (0,0.71);
-% \draw[dotted,thick] (N) -- (q);
-% \draw[->,thick,blue!70!black] (q) -- (r);
-% \fill (q) circle (2pt) node[below,font=\footnotesize] {$\vq$};
-% \fill (N) circle (2pt) node[above left,font=\footnotesize,fill=white,inner sep=1pt] {$N(\vq)$};
-% \fill[blue!70!black] (r) circle (2pt) node[below right,font=\footnotesize] {$r(\vq)$};
-% \node[font=\footnotesize,blue!70!black,above] at (-0.28,0.8) {$\nabla\gamma$};
-% \end{tikzpicture}
-% \caption{Retraction of $\vq$ onto the Voronoi diagram between two walls: move along the direction of clearance growth (away from the neighbor $N(\vq)$) until the first point $r(\vq)$ of $\Vor$.}
-% \label{fig:retraction}
-% \end{figure}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[>=Stealth]
+\tikzset{wall/.style={pattern=north east lines,pattern color=black!60,draw=black}}
+\fill[wall] (-1.8,-1.5) -- (-1.2,2.5) -- (-2.6,2.5) -- (-2.6,-1.5) -- cycle;
+\fill[wall] (1.8,-1.5) -- (1.2,2.5) -- (2.6,2.5) -- (2.6,-1.5) -- cycle;
+\draw[thick] (-1.8,-1.5) -- (-1.2,2.5);
+\draw[thick] (1.8,-1.5) -- (1.2,2.5);
+\draw[red!70!black,very thick,dashed] (0,-1.5) -- (0,2.5);
+\node[red!70!black,above] at (0,2.5) {$\Vor$};
+\coordinate (q) at (-0.6,0.8);
+\coordinate (N) at (-1.436,0.925);
+\coordinate (r) at (0,0.71);
+\draw[dotted,thick] (N) -- (q);
+\draw[->,thick,blue!70!black] (q) -- (r);
+\fill (q) circle (2pt) node[below,font=\footnotesize] {$\vq$};
+\fill (N) circle (2pt) node[above left,font=\footnotesize,fill=white,inner sep=1pt] {$N(\vq)$};
+\fill[blue!70!black] (r) circle (2pt) node[below right,font=\footnotesize] {$r(\vq)$};
+\node[font=\footnotesize,blue!70!black,above] at (-0.28,0.8) {$\nabla\gamma$};
+\end{tikzpicture}
+\caption{Retraction of $\vq$ onto the Voronoi diagram between two walls: move along the direction of clearance growth (away from the neighbor $N(\vq)$) until the first point $r(\vq)$ of $\Vor$.}
+\label{fig:retraction}
+\end{figure}
 
-% \begin{theorem}[Existence of a safe path]
-% \label{thm:retr}
-% A safe path between $\qs$ and $\qg$ exists if and only if a path exists on $\Vor(\Cfree)$ between $r(\qs)$ and $r(\qg)$.
-% \end{theorem}
-% \begin{proof}[Proof sketch]
-% ($\Leftarrow$) Concatenate the safe segments $\qs\to r(\qs)$ and $r(\qg)\to\qg$ (Prop.~\ref{prop:retr}) with the path on $\Vor(\Cfree)\subset\Cfree$.
-% ($\Rightarrow$) Let $K$ be the connected component of $\Cfree$ containing $\qs$ and $\qg$ (Prop.~\ref{prop:solvability}). The map $r$ is continuous and sends $K$ onto $\Vor(\Cfree)\cap K$, so this set is connected, being a continuous image of a connected set. Since $\Vor(\Cfree)$ is a finite graph, a connected subset of it is path-connected; as $r(\qs),r(\qg)\in\Vor(\Cfree)\cap K$, they are joined by a path on $\Vor(\Cfree)$.
-% \end{proof}
+\begin{theorem}[Existence of a safe path]
+\label{thm:retr}
+A safe path between $\qs$ and $\qg$ exists if and only if a path exists on $\Vor(\Cfree)$ between $r(\qs)$ and $r(\qg)$.
+\end{theorem}
+\begin{proof}[Proof sketch]
+($\Leftarrow$) Concatenate the safe segments $\qs\to r(\qs)$ and $r(\qg)\to\qg$ (Prop.~\ref{prop:retr}) with the path on $\Vor(\Cfree)\subset\Cfree$.
+($\Rightarrow$) Let $K$ be the connected component of $\Cfree$ containing $\qs$ and $\qg$ (Prop.~\ref{prop:solvability}). The map $r$ is continuous and sends $K$ onto $\Vor(\Cfree)\cap K$, so this set is connected, being a continuous image of a connected set. Since $\Vor(\Cfree)$ is a finite graph, a connected subset of it is path-connected; as $r(\qs),r(\qg)\in\Vor(\Cfree)\cap K$, they are joined by a path on $\Vor(\Cfree)$.
+\end{proof}
 
-% \begin{intuition}
-% The theorem turns a two-dimensional question (``can I get through this maze of free space?'') into a one-dimensional one (``are these two points on the same piece of this graph?''). The name of the method comes from here: a retraction brings a configuration of the two-dimensional $\Cfree$ down to the one-dimensional set $\Vor(\Cfree)$, without breaking connectivity.
-% \end{intuition}
+\begin{intuition}
+The theorem turns a two-dimensional question (``can I get through this maze of free space?'') into a one-dimensional one (``are these two points on the same piece of this graph?''). The name of the method comes from here: a retraction brings a configuration of the two-dimensional $\Cfree$ down to the one-dimensional set $\Vor(\Cfree)$, without breaking connectivity.
+\end{intuition}
 
-% \subsect{Algorithm, solution path and properties}{19--21}
+\subsect{Algorithm, solution path and properties}{19--21}
 
-% \begin{algorithm}[Retraction method]
-% \label{alg:retr}
-% The method consists of the following steps.
-% \begin{enumerate}
-%   \item Build the generalized Voronoi diagram $\Vor(\Cfree)$.
-%   \item Compute the retractions $r(\qs)$ and $r(\qg)$.
-%   \item Search $\Vor(\Cfree)$ for a sequence of arcs such that $r(\qs)$ belongs to the first and $r(\qg)$ to the last.
-%   \item If the search is successful, return the solution path made of:
-%   \begin{enumerate}[label=(\alph*)]
-%     \item the line segment from $\qs$ to $r(\qs)$;
-%     \item the portion of the first arc from $r(\qs)$ to its end;
-%     \item the second, third, \dots, penultimate arcs;
-%     \item the portion of the last arc from its start to $r(\qg)$;
-%     \item the line segment from $r(\qg)$ to $\qg$.
-%   \end{enumerate}
-%   Otherwise, report a failure.
-% \end{enumerate}
-% \end{algorithm}
+\begin{algorithm}[Retraction method]
+\label{alg:retr}
+The method consists of the following steps.
+\begin{enumerate}
+  \item Build the generalized Voronoi diagram $\Vor(\Cfree)$.
+  \item Compute the retractions $r(\qs)$ and $r(\qg)$.
+  \item Search $\Vor(\Cfree)$ for a sequence of arcs such that $r(\qs)$ belongs to the first and $r(\qg)$ to the last.
+  \item If the search is successful, return the solution path made of:
+  \begin{enumerate}[label=(\alph*)]
+    \item the line segment from $\qs$ to $r(\qs)$;
+    \item the portion of the first arc from $r(\qs)$ to its end;
+    \item the second, third, \dots, penultimate arcs;
+    \item the portion of the last arc from its start to $r(\qg)$;
+    \item the line segment from $r(\qg)$ to $\qg$.
+  \end{enumerate}
+  Otherwise, report a failure.
+\end{enumerate}
+\end{algorithm}
 
-% Figure~\ref{fig:gvd} shows a solution path produced by this procedure.
+Figure~\ref{fig:gvd} shows a solution path produced by this procedure.
 
-% \paragraph{Minimum-length path.} If a minimum-length path is desired, in the graph search of step~3 label each arc with a cost equal to its length and use Dijkstra or $\mathrm{A}^\star$ to compute a minimum-cost solution.
+\paragraph{Minimum-length path.} If a minimum-length path is desired, in the graph search of step~3 label each arc with a cost equal to its length and use Dijkstra or $\mathrm{A}^\star$ to compute a minimum-cost solution.
 
-% \begin{definition}[Completeness; multiple-query]
-% A planner is \emph{complete} if it finds a solution whenever one exists and reports a failure otherwise. A planner is \emph{multiple-query} if the data structure it builds depends only on the environment, so that it can be built once and reused for different pairs $(\qs,\qg)$.
-% \end{definition}
+\begin{definition}[Completeness; multiple-query]
+A planner is \emph{complete} if it finds a solution whenever one exists and reports a failure otherwise. A planner is \emph{multiple-query} if the data structure it builds depends only on the environment, so that it can be built once and reused for different pairs $(\qs,\qg)$.
+\end{definition}
 
-% \begin{theorem}[Properties of the retraction method]
-% \label{thm:retr-props}
-% The retraction method is (i) complete, (ii) multiple-query, and (iii) if $\Cfree$ has $v$ vertices, $\Vor(\Cfree)$ has $O(v)$ arcs and the overall time complexity is $O(v\log v)$.
-% \end{theorem}
-% \begin{proof}[Proof sketch]
-% (i) follows from Theorem~\ref{thm:retr}: the graph search on a finite graph is exhaustive, so it finds a path iff one exists. (ii) $\Vor(\Cfree)$ depends only on $\Cfree$, hence it can be built once for all; only steps 2--4 depend on $\qs,\qg$. (iii) The cost of the steps is: step~1, $O(v\log v)$; step~2, $O(v)$; step~3, $O(v\log v)$ ($\mathrm{A}^\star$ on a graph with $O(v)$ arcs). The sum is $O(v\log v)$.
-% \end{proof}
+\begin{theorem}[Properties of the retraction method]
+\label{thm:retr-props}
+The retraction method is (i) complete, (ii) multiple-query, and (iii) if $\Cfree$ has $v$ vertices, $\Vor(\Cfree)$ has $O(v)$ arcs and the overall time complexity is $O(v\log v)$.
+\end{theorem}
+\begin{proof}[Proof sketch]
+(i) follows from Theorem~\ref{thm:retr}: the graph search on a finite graph is exhaustive, so it finds a path iff one exists. (ii) $\Vor(\Cfree)$ depends only on $\Cfree$, hence it can be built once for all; only steps 2--4 depend on $\qs,\qg$. (iii) The cost of the steps is: step~1, $O(v\log v)$; step~2, $O(v)$; step~3, $O(v\log v)$ ($\mathrm{A}^\star$ on a graph with $O(v)$ arcs). The sum is $O(v\log v)$.
+\end{proof}
 
-% \begin{intuition}
-% Because the diagram is built once, the expensive part ($O(v\log v)$) is paid at ``preprocessing'' time; later queries only retract two points and search a graph that is linear in the number of vertices. Completeness is the real gift of the method: if it says ``failure'', no path exists.
-% \end{intuition}
+\begin{intuition}
+Because the diagram is built once, the expensive part ($O(v\log v)$) is paid at ``preprocessing'' time; later queries only retract two points and search a graph that is linear in the number of vertices. Completeness is the real gift of the method: if it says ``failure'', no path exists.
+\end{intuition}
 
-% \begin{remark}[Extensions]
-% Extensions of the retraction method to higher-dimensional configuration spaces, or without the polygonal assumption, are possible but quite complicated and not very efficient.
-% \end{remark}
+\begin{remark}[Extensions]
+Extensions of the retraction method to higher-dimensional configuration spaces, or without the polygonal assumption, are possible but quite complicated and not very efficient.
+\end{remark}
 
-% % =====================================================================
-% \sect{Roadmap Method: Cell Decomposition}{22--32}
-% \label{sec:cells}
-% % =====================================================================
+% =====================================================================
+\sect{Roadmap Method: Cell Decomposition}{22--32}
+\label{sec:cells}
+% =====================================================================
 
-% \subsect{General idea}{22}
+\subsect{General idea}{22}
 
-% \begin{definition}[Cell decomposition and connectivity graph]
-% A \emph{cell decomposition} of $\Cfree$ is a collection of regions (\emph{cells}) with disjoint interiors that cover $\Cfree$ (exact decomposition) or a part of it (approximate decomposition) and such that
-% \begin{enumerate}
-%   \item[(P1)] it is easy to compute a safe path between two configurations in the \emph{same} cell;
-%   \item[(P2)] it is easy to compute a safe path between two configurations in \emph{adjacent} cells.
-% \end{enumerate}
-% The associated \emph{connectivity graph} $\mathcal{C}$ has the cells as nodes and an arc between two nodes iff the cells are adjacent. A path on $\mathcal{C}$ is a sequence of adjacent cells called a \emph{channel}.
-% \end{definition}
+\begin{definition}[Cell decomposition and connectivity graph]
+A \emph{cell decomposition} of $\Cfree$ is a collection of regions (\emph{cells}) with disjoint interiors that cover $\Cfree$ (exact decomposition) or a part of it (approximate decomposition) and such that
+\begin{enumerate}
+  \item[(P1)] it is easy to compute a safe path between two configurations in the \emph{same} cell;
+  \item[(P2)] it is easy to compute a safe path between two configurations in \emph{adjacent} cells.
+\end{enumerate}
+The associated \emph{connectivity graph} $\mathcal{C}$ has the cells as nodes and an arc between two nodes iff the cells are adjacent. A path on $\mathcal{C}$ is a sequence of adjacent cells called a \emph{channel}.
+\end{definition}
 
-% Once a decomposition is available, we find a channel with $\qs$ in the first cell and $\qg$ in the last, and extract a safe path inside it. Different methods are obtained depending on the \emph{type of cells}:
-% \begin{itemize}
-%   \item \textbf{exact decomposition}: cells have variable shapes and cover exactly the whole $\Cfree$;
-%   \item \textbf{approximate decomposition}: for simplicity all cells have the same (fixed) shape, e.g.\ squares, so the decomposition does not cover all of $\Cfree$.
-% \end{itemize}
+Once a decomposition is available, we find a channel with $\qs$ in the first cell and $\qg$ in the last, and extract a safe path inside it. Different methods are obtained depending on the \emph{type of cells}:
+\begin{itemize}
+  \item \textbf{exact decomposition}: cells have variable shapes and cover exactly the whole $\Cfree$;
+  \item \textbf{approximate decomposition}: for simplicity all cells have the same (fixed) shape, e.g.\ squares, so the decomposition does not cover all of $\Cfree$.
+\end{itemize}
 
-% \begin{proposition}
-% \label{prop:channel}
-% If (P1) and (P2) hold, every channel from the cell containing $\qs$ to the cell containing $\qg$ yields a safe path from $\qs$ to $\qg$.
-% \end{proposition}
-% \begin{proof}
-% Choose a configuration in the common boundary of each pair of consecutive cells of the channel; join $\qs$ to the first, each to the next, and the last to $\qg$. Each leg stays in a single cell (P1) or crosses between adjacent cells (P2); all cells are in $\Cfree$.
-% \end{proof}
+\begin{proposition}
+\label{prop:channel}
+If (P1) and (P2) hold, every channel from the cell containing $\qs$ to the cell containing $\qg$ yields a safe path from $\qs$ to $\qg$.
+\end{proposition}
+\begin{proof}
+Choose a configuration in the common boundary of each pair of consecutive cells of the channel; join $\qs$ to the first, each to the next, and the last to $\qg$. Each leg stays in a single cell (P1) or crosses between adjacent cells (P2); all cells are in $\Cfree$.
+\end{proof}
 
-% \begin{intuition}
-% It is the ``rooms and doors'' idea: if you know how to walk inside a room (easy) and how to pass through a door between neighbouring rooms (easy), a route from the start room to the goal room is just a list of rooms, i.e.\ a path on the graph of rooms. A channel is also more than a single path: it is a whole corridor of safe configurations.
-% \end{intuition}
+\begin{intuition}
+It is the ``rooms and doors'' idea: if you know how to walk inside a room (easy) and how to pass through a door between neighbouring rooms (easy), a route from the start room to the goal room is just a list of rooms, i.e.\ a path on the graph of rooms. A channel is also more than a single path: it is a whole corridor of safe configurations.
+\end{intuition}
 
-% \subsect{Exact decomposition}{23--28}
+\subsect{Exact decomposition}{23--28}
 
-% \paragraph{Assumptions and cells.} Assume $\Cspace=\R^2$ and $\Cfree$ a polygonal limited subset. Variable-shape cells are needed to decompose $\Cfree$ exactly; a typical choice are \emph{convex polygons}.
+\paragraph{Assumptions and cells.} Assume $\Cspace=\R^2$ and $\Cfree$ a polygonal limited subset. Variable-shape cells are needed to decompose $\Cfree$ exactly; a typical choice are \emph{convex polygons}.
 
-% \begin{lemma}[Convex cells satisfy (P1) and (P2)]
-% \label{lem:convex}
-% Let $c_1,c_2$ be convex polygonal cells sharing a boundary segment $\Gamma$ with midpoint $m$. Then any two points of $c_1$ are joined by a straight segment contained in $c_1$ (P1), and for $\boldsymbol p\in c_1$, $\boldsymbol p'\in c_2$ the polyline $\boldsymbol p\to m\to\boldsymbol p'$ is contained in $c_1\cup c_2$ (P2).
-% \end{lemma}
-% \begin{proof}
-% A convex set contains the segment between any two of its points, which gives (P1). For (P2), $m\in c_1\cap c_2$, so the segment $\boldsymbol p m$ lies in $c_1$ and the segment $m\boldsymbol p'$ lies in $c_2$.
-% \end{proof}
+\begin{lemma}[Convex cells satisfy (P1) and (P2)]
+\label{lem:convex}
+Let $c_1,c_2$ be convex polygonal cells sharing a boundary segment $\Gamma$ with midpoint $m$. Then any two points of $c_1$ are joined by a straight segment contained in $c_1$ (P1), and for $\boldsymbol p\in c_1$, $\boldsymbol p'\in c_2$ the polyline $\boldsymbol p\to m\to\boldsymbol p'$ is contained in $c_1\cup c_2$ (P2).
+\end{lemma}
+\begin{proof}
+A convex set contains the segment between any two of its points, which gives (P1). For (P2), $m\in c_1\cap c_2$, so the segment $\boldsymbol p m$ lies in $c_1$ and the segment $m\boldsymbol p'$ lies in $c_2$.
+\end{proof}
 
-% \begin{intuition}
-% Convexity means ``no corners to hide behind'': any two points in the cell see each other directly. That is why the decomposition uses convex polygons, and why one never has to search \emph{inside} a cell.
-% \end{intuition}
+\begin{intuition}
+Convexity means ``no corners to hide behind'': any two points in the cell see each other directly. That is why the decomposition uses convex polygons, and why one never has to search \emph{inside} a cell.
+\end{intuition}
 
-% \paragraph{Sweep-line algorithm.} It computes a decomposition of $\Cfree$ into convex polygons:
-% \begin{itemize}
-%   \item sweep a (vertical) line over $\Cfree$; when it goes through a vertex, two segments, the \emph{extensions}, originate at the vertex (one upward, one downward);
-%   \item an extension lying in $\Cfree$ is part of the boundary of a cell; the others are discarded (they run inside an obstacle);
-%   \item the cells are bounded by extensions and/or parts of $\partial\Cfree$; the result is a \emph{trapezoidal decomposition}.
-% \end{itemize}
+\paragraph{Sweep-line algorithm.} It computes a decomposition of $\Cfree$ into convex polygons:
+\begin{itemize}
+  \item sweep a (vertical) line over $\Cfree$; when it goes through a vertex, two segments, the \emph{extensions}, originate at the vertex (one upward, one downward);
+  \item an extension lying in $\Cfree$ is part of the boundary of a cell; the others are discarded (they run inside an obstacle);
+  \item the cells are bounded by extensions and/or parts of $\partial\Cfree$; the result is a \emph{trapezoidal decomposition}.
+\end{itemize}
 
-% \begin{proposition}[Trapezoidal decomposition]
-% \label{prop:trap}
-% The sweep-line algorithm decomposes a polygonal limited $\Cfree$ with $v$ vertices into $O(v)$ convex cells (trapezoids, possibly degenerate into triangles).
-% \end{proposition}
-% \begin{proof}[Proof sketch]
-% Each cell is delimited on the left and right by vertical segments (extensions) and above and below by edges of the polygon: it is the intersection of half-planes, hence convex. For the count, the subdivision is a planar graph whose vertices are the $v$ polygon vertices plus at most $2$ end points for each of the at most $2v$ extensions, i.e.\ $O(v)$ vertices; by Euler's formula a planar graph with $O(v)$ vertices has $O(v)$ edges and faces.
-% \end{proof}
+\begin{proposition}[Trapezoidal decomposition]
+\label{prop:trap}
+The sweep-line algorithm decomposes a polygonal limited $\Cfree$ with $v$ vertices into $O(v)$ convex cells (trapezoids, possibly degenerate into triangles).
+\end{proposition}
+\begin{proof}[Proof sketch]
+Each cell is delimited on the left and right by vertical segments (extensions) and above and below by edges of the polygon: it is the intersection of half-planes, hence convex. For the count, the subdivision is a planar graph whose vertices are the $v$ polygon vertices plus at most $2$ end points for each of the at most $2v$ extensions, i.e.\ $O(v)$ vertices; by Euler's formula a planar graph with $O(v)$ vertices has $O(v)$ edges and faces.
+\end{proof}
 
-% \begin{figure}[t]
-% \centering
-% \begin{tikzpicture}[>=Stealth]
-% % C-space with one triangular obstacle and extensions
-% \draw[thick] (0,0) rectangle (6,4);
-% \fill[black!55] (1.5,1.2) -- (3,2.8) -- (4.2,1.5) -- cycle;
-% \draw[dashed] (1.5,0) -- (1.5,4);
-% \draw[dashed] (3,2.8) -- (3,4);
-% \draw[dashed] (4.2,0) -- (4.2,4);
-% \node at (0.75,2) {$c_1$};
-% \node at (2.25,3.3) {$c_2$};
-% \node at (3.6,3.3) {$c_3$};
-% \node at (2.85,0.55) {$c_4$};
-% \node at (5.1,2) {$c_5$};
-% \fill (0.7,2.9) circle (2pt) node[above,font=\footnotesize] {$\qs$};
-% \fill (5.2,1.3) circle (2pt) node[below,font=\footnotesize] {$\qg$};
-% \draw[red!70!black,very thick] (0.7,2.9) -- (1.5,0.6) -- (4.2,0.75) -- (5.2,1.3);
-% \fill[red!70!black] (1.5,0.6) circle (1.5pt);
-% \fill[red!70!black] (4.2,0.75) circle (1.5pt);
-% % connectivity graph
-% \begin{scope}[xshift=7.4cm,yshift=0.2cm]
-%   \node[draw,circle,inner sep=1.5pt,fill=red!15] (n1) at (0.2,2.0) {$c_1$};
-%   \node[draw,circle,inner sep=1.5pt] (n2) at (1.5,3.4) {$c_2$};
-%   \node[draw,circle,inner sep=1.5pt] (n3) at (3.1,3.4) {$c_3$};
-%   \node[draw,circle,inner sep=1.5pt,fill=red!15] (n5) at (4.4,2.0) {$c_5$};
-%   \node[draw,circle,inner sep=1.5pt,fill=red!15] (n4) at (2.3,0.4) {$c_4$};
-%   \draw (n1) -- (n2) -- (n3) -- (n5);
-%   \draw[red!70!black,very thick] (n5) -- (n4) -- (n1);
-%   \node[font=\footnotesize] at (2.3,-0.5) {connectivity graph $\mathcal{C}$};
-% \end{scope}
-% \end{tikzpicture}
-% \caption{Sweep-line (trapezoidal) decomposition of a polygonal $\Cfree$ with one triangular obstacle: vertical extensions (dashed) from the three vertices cut $\Cfree$ into five convex cells. The channel $c_1,c_4,c_5$ (red in the graph) gives the solution path through the midpoints of the common boundaries.}
-% \label{fig:trap}
-% \end{figure}
+\begin{figure}[H]
+\centering
+	\includegraphics[width=.4\linewidth]{1795681352043.png}
+% connectivity graph
+	\includegraphics[width=.4\linewidth]{1795681398629.png}
+\caption{Sweep-line (trapezoidal) decomposition of a polygonal $\Cfree$ with different obstacles: vertical extensions (dashed) from the vertices cut $\Cfree$ into convex cells. The channel (red in the graph) gives the solution path through the midpoints of the common boundaries.}
+\label{fig:trap}
+\end{figure}
 
-% \paragraph{Algorithm.} After the decomposition we build the connectivity graph $\mathcal{C}$ (nodes: cells; arcs: adjacency), identify the nodes $c_s,c_g$ containing $\qs,\qg$, and use graph search on $\mathcal{C}$ to find a channel from $c_s$ to $c_g$. From the channel, a safe solution path is extracted by joining $\qs$ to $\qg$ via the \emph{midpoints} of the common boundaries (Lemma~\ref{lem:convex}).
+\paragraph{Algorithm.} After the decomposition we build the connectivity graph $\mathcal{C}$ (nodes: cells; arcs: adjacency), identify the nodes $c_s,c_g$ containing $\qs,\qg$, and use graph search on $\mathcal{C}$ to find a channel from $c_s$ to $c_g$. From the channel, a safe solution path is extracted by joining $\qs$ to $\qg$ via the \emph{midpoints} of the common boundaries (Lemma~\ref{lem:convex}).
 
-% \begin{algorithm}[Exact cell decomposition]
-% \label{alg:exact}
-% The method consists of the following steps.
-% \begin{enumerate}
-%   \item Compute a convex polygonal decomposition of $\Cfree$.
-%   \item Build the associated connectivity graph $\mathcal{C}$.
-%   \item Search $\mathcal{C}$ for a channel of cells from $c_s$ to $c_g$.
-%   \item If successful, extract and return a solution path consisting of
-%   \begin{enumerate}[label=(\alph*)]
-%     \item a line segment from $\qs$ to the midpoint of the common boundary between the first two cells;
-%     \item line segments between the midpoints of consecutive cells;
-%     \item a line segment from the midpoint of the common boundary between the last two cells to $\qg$.
-%   \end{enumerate}
-%   Otherwise, report a failure.
-% \end{enumerate}
-% \end{algorithm}
+\begin{algorithm}[Exact cell decomposition]
+\label{alg:exact}
+The method consists of the following steps.
+\begin{enumerate}
+  \item Compute a convex polygonal decomposition of $\Cfree$.
+  \item Build the associated connectivity graph $\mathcal{C}$.
+  \item Search $\mathcal{C}$ for a channel of cells from $c_s$ to $c_g$.
+  \item If successful, extract and return a solution path consisting of
+  \begin{enumerate}[label=(\alph*)]
+    \item a line segment from $\qs$ to the midpoint of the common boundary between the first two cells;
+    \item line segments between the midpoints of consecutive cells;
+    \item a line segment from the midpoint of the common boundary between the last two cells to $\qg$.
+  \end{enumerate}
+  Otherwise, report a failure.
+\end{enumerate}
+\end{algorithm}
 
-% \paragraph{Minimum-length channel.} If a minimum-length path is desired, define a modified connectivity graph with $\qs$, $\qg$ and \emph{all the midpoints} as nodes and with line segments between nodes in the same cell as arcs, each with cost equal to its length, and use $\mathrm{A}^\star$ to compute a minimum-cost path.
+\paragraph{Minimum-length channel.} If a minimum-length path is desired, define a modified connectivity graph with $\qs$, $\qg$ and \emph{all the midpoints} as nodes and with line segments between nodes in the same cell as arcs, each with cost equal to its length, and use $\mathrm{A}^\star$ to compute a minimum-cost path.
 
-% \begin{theorem}[Properties of exact cell decomposition]
-% \label{thm:exact-props}
-% The exact cell decomposition method is complete and multiple-query. If $\Cfree$ has $v$ vertices, $\mathcal{C}$ has $O(v)$ arcs and the overall complexity is $O(v\log v)$: step~1 costs $O(v\log v)$, step~2 costs $O(v)$ and step~3 costs $O(v\log v)$ ($\mathrm{A}^\star$ on a graph with $O(v)$ arcs).
-% \end{theorem}
-% \begin{proof}[Proof sketch]
-% Completeness: the cells cover $\Cfree$ exactly and adjacency is exact, so a safe path exists iff the connectivity graph has a path between $c_s$ and $c_g$ (Prop.~\ref{prop:channel} for one direction; for the other, a safe path crosses a sequence of cells that is a path on $\mathcal{C}$). The decomposition depends only on $\Cfree$, hence it is multiple-query. The bounds follow from Prop.~\ref{prop:trap}.
-% \end{proof}
+\begin{theorem}[Properties of exact cell decomposition]
+\label{thm:exact-props}
+The exact cell decomposition method is complete and multiple-query. If $\Cfree$ has $v$ vertices, $\mathcal{C}$ has $O(v)$ arcs and the overall complexity is $O(v\log v)$: step~1 costs $O(v\log v)$, step~2 costs $O(v)$ and step~3 costs $O(v\log v)$ ($\mathrm{A}^\star$ on a graph with $O(v)$ arcs).
+\end{theorem}
+\begin{proof}[Proof sketch]
+Completeness: the cells cover $\Cfree$ exactly and adjacency is exact, so a safe path exists iff the connectivity graph has a path between $c_s$ and $c_g$ (Prop.~\ref{prop:channel} for one direction; for the other, a safe path crosses a sequence of cells that is a path on $\mathcal{C}$). The decomposition depends only on $\Cfree$, hence it is multiple-query. The bounds follow from Prop.~\ref{prop:trap}.
+\end{proof}
 
-% \begin{intuition}
-% Retraction and exact decomposition behave very similarly (same completeness, same $O(v\log v)$), but the output is different: a roadmap gives \emph{one} curve per query, while a channel contains an \emph{infinity} of safe paths. That extra freedom can be spent to account for nonholonomic constraints or to avoid unexpected obstacles during the motion.
-% \end{intuition}
+\begin{intuition}
+Retraction and exact decomposition behave very similarly (same completeness, same $O(v\log v)$), but the output is different: a roadmap gives \emph{one} curve per query, while a channel contains an \emph{infinity} of safe paths. That extra freedom can be spent to account for nonholonomic constraints or to avoid unexpected obstacles during the motion.
+\end{intuition}
 
-% \begin{remark}[Comparison and extensions]
-% \leavevmode
-% \begin{itemize}
-%   \item The solution path is a broken line, but smoothing may be performed as a post-processing phase, as long as the path stays within the channel.
-%   \item An extension to configuration spaces of arbitrary dimension exists, but it is very inefficient: the complexity is exponential in $\dim\Cspace$.
-%   \item If $\Cspace=\R^3$ and $\Cfree$ is a polyhedral limited subset, the \emph{sweep-plane} algorithm may be used to decompose $\Cfree$ into convex polyhedra.
-% \end{itemize}
-% \end{remark}
+\begin{remark}[Comparison and extensions]
+\leavevmode
+\begin{itemize}
+  \item The solution path is a broken line, but smoothing may be performed as a post-processing phase, as long as the path stays within the channel.
+  \item An extension to configuration spaces of arbitrary dimension exists, but it is very inefficient: the complexity is exponential in $\dim\Cspace$.
+  \item If $\Cspace=\R^3$ and $\Cfree$ is a polyhedral limited subset, the \emph{sweep-plane} algorithm may be used to decompose $\Cfree$ into convex polyhedra.
+\end{itemize}
+\end{remark}
 
-% \subsect{Approximate decomposition}{29--32}
+\subsect{Approximate decomposition}{29--32}
 
-% Assume again $\Cspace=\R^2$ and $\Cfree$ a polygonal limited subset. Fixed-shape cells (e.g.\ squares) are used to obtain an approximate decomposition \emph{by defect} of $\Cfree$ (the cells are inside $\Cfree$); convexity still guarantees (P1) and (P2). A \emph{recursive} algorithm reaches a trade-off between simplicity and accuracy: it refines the decomposition only where needed.
+Assume again $\Cspace=\R^2$ and $\Cfree$ a polygonal limited subset. Fixed-shape cells (e.g.\ squares) are used to obtain an approximate decomposition \emph{by defect} of $\Cfree$ (the cells are inside $\Cfree$); convexity still guarantees (P1) and (P2). A \emph{recursive} algorithm reaches a trade-off between simplicity and accuracy: it refines the decomposition only where needed.
 
-% \begin{definition}[Cell classification]
-% A cell is
-% \begin{itemize}
-%   \item \emph{free}, if its interior is completely in $\Cfree$;
-%   \item \emph{occupied}, if it is completely in $\CO$;
-%   \item \emph{mixed}, if it is neither free nor occupied.
-% \end{itemize}
-% \end{definition}
+\begin{definition}[Cell classification]
+A cell is
+\begin{itemize}
+  \item \emph{free}, if its interior is completely in $\Cfree$;
+  \item \emph{occupied}, if it is completely in $\CO$;
+  \item \emph{mixed}, if it is neither free nor occupied.
+\end{itemize}
+\end{definition}
 
-% \begin{algorithm}[Recursive approximate cell decomposition]
-% \label{alg:approx}
-% Start by dividing $\Cspace$ into $4$ cells and classifying each of them. Then repeat:
-% \begin{enumerate}
-%   \item build the connectivity graph $\mathcal{C}$ associated to the current level of decomposition, with \emph{free and mixed} cells as nodes and arcs between adjacent nodes;
-%   \item identify the nodes $c_s,c_g$ where $\qs,\qg$ are, and use graph search to look for a path (channel) on $\mathcal{C}$ from $c_s$ to $c_g$; if it does not exist, report a failure;
-%   \item if a channel exists, take any mixed cell in it and decompose it (into $4$ cells) as before.
-% \end{enumerate}
-% Stop when a path made \emph{only of free cells} is found, or when a minimum size has been reached for the cells; in the latter case, backtrack.
-% \end{algorithm}
+\begin{algorithm}[Recursive approximate cell decomposition]
+\label{alg:approx}
+Start by dividing $\Cspace$ into $4$ cells and classifying each of them. Then repeat:
+\begin{enumerate}
+  \item build the connectivity graph $\mathcal{C}$ associated to the current level of decomposition, with \emph{free and mixed} cells as nodes and arcs between adjacent nodes;
+  \item identify the nodes $c_s,c_g$ where $\qs,\qg$ are, and use graph search to look for a path (channel) on $\mathcal{C}$ from $c_s$ to $c_g$; if it does not exist, report a failure;
+  \item if a channel exists, take any mixed cell in it and decompose it (into $4$ cells) as before.
+\end{enumerate}
+Stop when a path made \emph{only of free cells} is found, or when a minimum size has been reached for the cells; in the latter case, backtrack.
+\end{algorithm}
 
-% \begin{figure}[t]
-% \centering
-% \begin{tikzpicture}[>=Stealth]
-% \tikzset{occ/.style={fill=black!55},mix/.style={fill=orange!35},chan/.style={fill=blue!20}}
-% \newcommand{\cell}[4]{\fill[#4] (#1,#2) rectangle ++(#3,#3);}
-% % ---- level 1 ----
-% \begin{scope}
-%   \cell{0}{0}{2}{mix}  \cell{2}{2}{2}{mix}
-%   \draw[gray] (0,0) grid[step=2] (4,4);
-%   \draw[thick] (0,0) rectangle (4,4);
-%   \draw[thick,black] (2,2) rectangle (3.5,3.5);
-%   \draw[thick,black] (0,0) rectangle (1.5,1);
-%   \fill (0.5,3) circle (2pt) node[above,font=\footnotesize] {$\qs$};
-%   \fill (3.5,0.5) circle (2pt) node[above,font=\footnotesize] {$\qg$};
-%   \node[font=\footnotesize] at (2,-0.4) {level 1};
-% \end{scope}
-% % ---- level 2 ----
-% \begin{scope}[xshift=5.4cm]
-%   \cell{0}{2}{2}{chan} \cell{2}{0}{2}{chan} \cell{1}{1}{1}{chan}
-%   \cell{0}{0}{1}{occ} \cell{1}{0}{1}{mix}
-%   \cell{2}{2}{1}{occ} \cell{3}{2}{1}{mix} \cell{2}{3}{1}{mix} \cell{3}{3}{1}{mix}
-%   \draw[gray] (0,0) grid[step=2] (4,4);
-%   \draw[gray] (0,0) grid[step=1] (2,2);
-%   \draw[gray] (2,2) grid[step=1] (4,4);
-%   \draw[thick] (0,0) rectangle (4,4);
-%   \draw[thick,black] (2,2) rectangle (3.5,3.5);
-%   \draw[thick,black] (0,0) rectangle (1.5,1);
-%   \fill (0.5,3) circle (2pt) node[above,font=\footnotesize] {$\qs$};
-%   \fill (3.5,0.5) circle (2pt) node[above,font=\footnotesize] {$\qg$};
-%   \node[font=\footnotesize] at (2,-0.4) {level 2: free-cell channel found};
-% \end{scope}
-% % legend
-% \begin{scope}[yshift=-1.4cm]
-%   \fill[white,draw=black] (0.5,0) rectangle (0.9,0.4); \node[right,font=\footnotesize] at (0.95,0.2) {free};
-%   \fill[orange!35,draw=black] (2.5,0) rectangle (2.9,0.4); \node[right,font=\footnotesize] at (2.95,0.2) {mixed};
-%   \fill[black!55,draw=black] (4.8,0) rectangle (5.2,0.4); \node[right,font=\footnotesize] at (5.25,0.2) {occupied};
-%   \fill[blue!20,draw=black] (7.4,0) rectangle (7.8,0.4); \node[right,font=\footnotesize] at (7.85,0.2) {free cells of the channel};
-% \end{scope}
-% \end{tikzpicture}
-% \caption{Recursive decomposition on a $4\times4$ environment with two rectangular obstacles (thick outlines). At level~1 every channel contains a mixed cell; after splitting the mixed cells, a channel made only of free cells (blue) connects the cells containing $\qs$ and $\qg$.}
-% \label{fig:approx}
-% \end{figure}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[>=Stealth]
+\tikzset{occ/.style={fill=black!55},mix/.style={fill=orange!35},chan/.style={fill=blue!20}}
+\newcommand{\cell}[4]{\fill[#4] (#1,#2) rectangle ++(#3,#3);}
+% ---- level 1 ----
+\begin{scope}
+  \cell{0}{0}{2}{mix}  \cell{2}{2}{2}{mix}
+  \draw[gray] (0,0) grid[step=2] (4,4);
+  \draw[thick] (0,0) rectangle (4,4);
+  \draw[thick,black] (2,2) rectangle (3.5,3.5);
+  \draw[thick,black] (0,0) rectangle (1.5,1);
+  \fill (0.5,3) circle (2pt) node[above,font=\footnotesize] {$\qs$};
+  \fill (3.5,0.5) circle (2pt) node[above,font=\footnotesize] {$\qg$};
+  \node[font=\footnotesize] at (2,-0.4) {level 1};
+\end{scope}
+% ---- level 2 ----
+\begin{scope}[xshift=5.4cm]
+  \cell{0}{2}{2}{chan} \cell{2}{0}{2}{chan} \cell{1}{1}{1}{chan}
+  \cell{0}{0}{1}{occ} \cell{1}{0}{1}{mix}
+  \cell{2}{2}{1}{occ} \cell{3}{2}{1}{mix} \cell{2}{3}{1}{mix} \cell{3}{3}{1}{mix}
+  \draw[gray] (0,0) grid[step=2] (4,4);
+  \draw[gray] (0,0) grid[step=1] (2,2);
+  \draw[gray] (2,2) grid[step=1] (4,4);
+  \draw[thick] (0,0) rectangle (4,4);
+  \draw[thick,black] (2,2) rectangle (3.5,3.5);
+  \draw[thick,black] (0,0) rectangle (1.5,1);
+  \fill (0.5,3) circle (2pt) node[above,font=\footnotesize] {$\qs$};
+  \fill (3.5,0.5) circle (2pt) node[above,font=\footnotesize] {$\qg$};
+  \node[font=\footnotesize] at (2,-0.4) {level 2: free-cell channel found};
+\end{scope}
+% legend
+\begin{scope}[yshift=-1.4cm]
+  \fill[white,draw=black] (0.5,0) rectangle (0.9,0.4); \node[right,font=\footnotesize] at (0.95,0.2) {free};
+  \fill[orange!35,draw=black] (2.5,0) rectangle (2.9,0.4); \node[right,font=\footnotesize] at (2.95,0.2) {mixed};
+  \fill[black!55,draw=black] (4.8,0) rectangle (5.2,0.4); \node[right,font=\footnotesize] at (5.25,0.2) {occupied};
+  \fill[blue!20,draw=black] (7.4,0) rectangle (7.8,0.4); \node[right,font=\footnotesize] at (7.85,0.2) {free cells of the channel};
+\end{scope}
+\end{tikzpicture}
+\caption{Recursive decomposition on a $4\times4$ environment with two rectangular obstacles (thick outlines). At level~1 every channel contains a mixed cell; after splitting the mixed cells, a channel made only of free cells (blue) connects the cells containing $\qs$ and $\qg$.}
+\label{fig:approx}
+\end{figure}
 
-% \begin{definition}[Resolution completeness; single-query]
-% A planner is \emph{resolution complete} if a solution is found if and only if one exists at the maximum allowed resolution (the minimum cell size). It is \emph{single-query} when the data structure depends on the given $\qs,\qg$ (here: the decomposition is guided by them).
-% \end{definition}
+\begin{definition}[Resolution completeness; single-query]
+A planner is \emph{resolution complete} if a solution is found if and only if one exists at the maximum allowed resolution (the minimum cell size). It is \emph{single-query} when the data structure depends on the given $\qs,\qg$ (here: the decomposition is guided by them).
+\end{definition}
 
-% \begin{theorem}[Properties of approximate decomposition]
-% \label{thm:approx-props}
-% The recursive approximate cell decomposition is resolution complete and single-query. Recursive decomposition can be implemented efficiently with \emph{quadtrees} (trees whose internal nodes have exactly four children). The method is conceptually applicable to configuration spaces of arbitrary dimension, but its complexity is still exponential in $\dim\Cspace$.
-% \end{theorem}
-% \begin{proof}[Proof sketch]
-% Free cells lie entirely in $\Cfree$, so a channel of free cells always gives a safe path; if the search reports a failure on a graph containing all free \emph{and} mixed cells, no path exists at any finer resolution either, because mixed cells already over-approximate what is traversable. If instead only mixed cells remain at the minimum size, the method cannot decide: this is why only resolution completeness holds, and narrow corridors are discovered only at high resolution. Splitting into $2^n$ children in dimension $n$ gives up to $m^n$ cells for $m$ cells per axis.
-% \end{proof}
+\begin{theorem}[Properties of approximate decomposition]
+\label{thm:approx-props}
+The recursive approximate cell decomposition is resolution complete and single-query. Recursive decomposition can be implemented efficiently with \emph{quadtrees} (trees whose internal nodes have exactly four children). The method is conceptually applicable to configuration spaces of arbitrary dimension, but its complexity is still exponential in $\dim\Cspace$.
+\end{theorem}
+\begin{proof}[Proof sketch]
+Free cells lie entirely in $\Cfree$, so a channel of free cells always gives a safe path; if the search reports a failure on a graph containing all free \emph{and} mixed cells, no path exists at any finer resolution either, because mixed cells already over-approximate what is traversable. If instead only mixed cells remain at the minimum size, the method cannot decide: this is why only resolution completeness holds, and narrow corridors are discovered only at high resolution. Splitting into $2^n$ children in dimension $n$ gives up to $m^n$ cells for $m$ cells per axis.
+\end{proof}
 
-% \begin{intuition}
-% It is a \emph{zoom} strategy, like a map application: start with the whole map; keep zooming only on the cells where the answer is ambiguous (the mixed ones, which are partly road and partly wall) and leave alone those that are clearly free or clearly blocked. The price for working on a grid is resolution: a corridor narrower than the finest cell can be missed. And since every refinement multiplies the number of cells by $2^n$, high-dimensional configuration spaces become too expensive.
-% \end{intuition}
+\begin{intuition}
+It is a \emph{zoom} strategy, like a map application: start with the whole map; keep zooming only on the cells where the answer is ambiguous (the mixed ones, which are partly road and partly wall) and leave alone those that are clearly free or clearly blocked. The price for working on a grid is resolution: a corridor narrower than the finest cell can be missed. And since every refinement multiplies the number of cells by $2^n$, high-dimensional configuration spaces become too expensive.
+\end{intuition}
 
-% % =====================================================================
-% \section{Summary}
-% % =====================================================================
+% =====================================================================
+\section{Summary}
+% =====================================================================
 
-% \paragraph{Where we are.} The canonical planning problem is geometric: find a path in $\Cfree$, the complement of the $\Cspace$-obstacle region, or report that none exists. Roadmap methods compute $\CO$ (or at least $\Cfree$'s geometry) and encode the connectivity of $\Cfree$ in a graph on which standard graph search is applied.
+\paragraph{Where we are.} The canonical planning problem is geometric: find a path in $\Cfree$, the complement of the $\Cspace$-obstacle region, or report that none exists. Roadmap methods compute $\CO$ (or at least $\Cfree$'s geometry) and encode the connectivity of $\Cfree$ in a graph on which standard graph search is applied.
 
-% \begin{table}[h]
-% \centering
-% \small
-% \renewcommand{\arraystretch}{1.25}
-% \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
-% \toprule
-%  & \textbf{Retraction} (GVD) & \textbf{Exact cell decomposition} & \textbf{Approximate cell decomposition}\\
-% \midrule
-% Assumptions & $\Cspace=\R^2$, polygonal limited $\Cfree$ & $\Cspace=\R^2$, polygonal limited $\Cfree$ & $\Cspace=\R^2$, polygonal limited $\Cfree$\\
-% Roadmap / cells & Generalized Voronoi diagram (rectilinear and parabolic arcs) & Convex polygons from the sweep-line (trapezoids); exact cover of $\Cfree$ & Fixed-shape cells (squares), free/mixed/occupied, by defect\\
-% Needs $\CO$? & Yes & Yes & Yes (to classify cells)\\
-% Solution & One curve: $\qs\to r(\qs)$, arcs of $\Vor$, $r(\qg)\to\qg$ (maximum clearance) & A channel of cells (infinity of paths); polyline via midpoints & Channel of free cells\\
-% Completeness & Complete & Complete & Resolution complete\\
-% Query type & Multiple-query & Multiple-query & Single-query\\
-% Complexity ($v$ vertices) & $O(v\log v)$ & $O(v\log v)$ & Exponential in $\dim\Cspace$ (quadtrees)\\
-% Higher dimensions & Possible but complicated & Possible but exponential in $\dim\Cspace$; sweep-plane in $\R^3$ & Conceptually immediate, still exponential\\
-% Key idea & Retract to the ridge of the clearance & Rooms and doors: convex cells & Zoom only on mixed cells\\
-% \bottomrule
-% \end{tabularx}
-% \caption{Comparison of the roadmap methods covered in this lecture.}
-% \end{table}
+\begin{table}[h]
+\centering
+\small
+\renewcommand{\arraystretch}{1.25}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+ & \textbf{Retraction} (GVD) & \textbf{Exact cell decomposition} & \textbf{Approximate cell decomposition}\\
+\midrule
+Assumptions & $\Cspace=\R^2$, polygonal limited $\Cfree$ & $\Cspace=\R^2$, polygonal limited $\Cfree$ & $\Cspace=\R^2$, polygonal limited $\Cfree$\\
+Roadmap / cells & Generalized Voronoi diagram (rectilinear and parabolic arcs) & Convex polygons from the sweep-line (trapezoids); exact cover of $\Cfree$ & Fixed-shape cells (squares), free/mixed/occupied, by defect\\
+Needs $\CO$? & Yes & Yes & Yes (to classify cells)\\
+Solution & One curve: $\qs\to r(\qs)$, arcs of $\Vor$, $r(\qg)\to\qg$ (maximum clearance) & A channel of cells (infinity of paths); polyline via midpoints & Channel of free cells\\
+Completeness & Complete & Complete & Resolution complete\\
+Query type & Multiple-query & Multiple-query & Single-query\\
+Complexity ($v$ vertices) & $O(v\log v)$ & $O(v\log v)$ & Exponential in $\dim\Cspace$ (quadtrees)\\
+Higher dimensions & Possible but complicated & Possible but exponential in $\dim\Cspace$; sweep-plane in $\R^3$ & Conceptually immediate, still exponential\\
+Key idea & Retract to the ridge of the clearance & Rooms and doors: convex cells & Zoom only on mixed cells\\
+\bottomrule
+\end{tabularx}
+\caption{Comparison of the roadmap methods covered in this lecture.}
+\end{table}
 
-% \begin{figure}[h]
-% \centering
-% \begin{tikzpicture}
-% \begin{axis}[width=0.78\textwidth,height=6.2cm,xlabel={dimension $n$ of $\Cspace$},ylabel={number of cells $m^n$},
-%   ymode=log,xmin=1,xmax=7,xtick={1,...,7},grid=both,legend pos=north west,legend cell align=left,
-%   tick label style={font=\small},label style={font=\small},legend style={font=\small}]
-% \addplot[blue!70!black,thick,mark=*] coordinates {(1,8)(2,64)(3,512)(4,4096)(5,32768)(6,262144)(7,2097152)};
-% \addlegendentry{$m=8$ cells per axis}
-% \addplot[red!70!black,thick,mark=square*] coordinates {(1,16)(2,256)(3,4096)(4,65536)(5,1048576)(6,16777216)(7,268435456)};
-% \addlegendentry{$m=16$ cells per axis}
-% \end{axis}
-% \end{tikzpicture}
-% \caption{Why cell-based methods do not scale: a uniform decomposition with $m$ cells per axis has $m^n$ cells in an $n$-dimensional $\Cspace$. Doubling the resolution multiplies the cost by $2^n$.}
-% \label{fig:scaling}
-% \end{figure}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[width=0.78\textwidth,height=6.2cm,xlabel={dimension $n$ of $\Cspace$},ylabel={number of cells $m^n$},
+  ymode=log,xmin=1,xmax=7,xtick={1,...,7},grid=both,legend pos=north west,legend cell align=left,
+  tick label style={font=\small},label style={font=\small},legend style={font=\small}]
+\addplot[blue!70!black,thick,mark=*] coordinates {(1,8)(2,64)(3,512)(4,4096)(5,32768)(6,262144)(7,2097152)};
+\addlegendentry{$m=8$ cells per axis}
+\addplot[red!70!black,thick,mark=square*] coordinates {(1,16)(2,256)(3,4096)(4,65536)(5,1048576)(6,16777216)(7,268435456)};
+\addlegendentry{$m=16$ cells per axis}
+\end{axis}
+\end{tikzpicture}
+\caption{Why cell-based methods do not scale: a uniform decomposition with $m$ cells per axis has $m^n$ cells in an $n$-dimensional $\Cspace$. Doubling the resolution multiplies the cost by $2^n$.}
+\label{fig:scaling}
+\end{figure}
 
-% \paragraph{Key take-aways.}
-% \begin{itemize}
-%   \item Motion planning is naturally formulated in $\Cspace$, where the robot is a point and obstacles are inflated into $\Cspace$-obstacles; $\Cfree$ may be disconnected, and a planner must return a safe path or a failure.
-%   \item For a translating rigid robot $\CO_i=\Obs_i\Mink(-\Rob_0)$ (isotropic for a disk, anisotropic for polygons); with rotation, slices are stacked; for manipulators, $\Cspace$-obstacles need inverse kinematics and may merge or disconnect $\Cfree$.
-%   \item The retraction method reduces planning to a graph search on the generalized Voronoi diagram, the maximum-clearance roadmap: complete, multiple-query, $O(v\log v)$.
-%   \item Exact cell decomposition (sweep-line, convex cells) has the same guarantees but produces a \emph{channel} of paths, flexible enough for nonholonomic constraints or unexpected obstacles; approximate decomposition (quadtrees) is only resolution complete and single-query.
-%   \item All of these methods need $\CO$ and scale exponentially with $\dim\Cspace$, which motivates probabilistic (PRM, RRT) and potential-field methods, which do not need $\CO$.
-% \end{itemize}
+\paragraph{Key take-aways.}
+\begin{itemize}
+  \item Motion planning is naturally formulated in $\Cspace$, where the robot is a point and obstacles are inflated into $\Cspace$-obstacles; $\Cfree$ may be disconnected, and a planner must return a safe path or a failure.
+  \item For a translating rigid robot $\CO_i=\Obs_i\Mink(-\Rob_0)$ (isotropic for a disk, anisotropic for polygons); with rotation, slices are stacked; for manipulators, $\Cspace$-obstacles need inverse kinematics and may merge or disconnect $\Cfree$.
+  \item The retraction method reduces planning to a graph search on the generalized Voronoi diagram, the maximum-clearance roadmap: complete, multiple-query, $O(v\log v)$.
+  \item Exact cell decomposition (sweep-line, convex cells) has the same guarantees but produces a \emph{channel} of paths, flexible enough for nonholonomic constraints or unexpected obstacles; approximate decomposition (quadtrees) is only resolution complete and single-query.
+  \item All of these methods need $\CO$ and scale exponentially with $\dim\Cspace$, which motivates probabilistic (PRM, RRT) and potential-field methods, which do not need $\CO$.
+\end{itemize}
 
 \end{document}
